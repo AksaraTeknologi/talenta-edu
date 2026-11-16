@@ -7,6 +7,7 @@ use App\Models\Certificate;
 use App\Models\CertificateParticipant;
 use App\Models\CourseRating;
 use App\Models\Invoice;
+use App\Models\LessonCompletion;
 use App\Services\CertificatePdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,6 +61,32 @@ class CourseController extends Controller
 
         $courseItem = $course->courseItems->first();
         $courseId = $courseItem->course_id;
+        $courseData = $courseItem->course;
+
+        // Auto-recalculate progress from lesson completions if out of sync
+        if ($courseData) {
+            $totalLessons = $courseData->modules()
+                ->withCount('lessons')
+                ->get()
+                ->sum('lessons_count');
+
+            if ($totalLessons > 0) {
+                $completedLessons = LessonCompletion::where('user_id', $userId)
+                    ->whereHas('lesson.module', function ($query) use ($courseId) {
+                        $query->where('course_id', $courseId);
+                    })
+                    ->count();
+
+                $actualProgress = round(($completedLessons / $totalLessons) * 100);
+                if ($actualProgress !== (int) $courseItem->progress) {
+                    $courseItem->update([
+                        'progress' => $actualProgress,
+                        'completed_at' => $actualProgress >= 100 ? ($courseItem->completed_at ?? now()) : null,
+                    ]);
+                    $courseItem->progress = $actualProgress;
+                }
+            }
+        }
 
         $courseRating = CourseRating::where('user_id', $userId)
             ->where('course_id', $courseId)
@@ -68,9 +95,7 @@ class CourseController extends Controller
         $certificate = Certificate::where('course_id', $courseId)->first();
 
         if ($certificate) {
-            $certificateParticipant = CertificateParticipant::where('certificate_id', $certificate->id)
-                ->where('user_id', $userId)
-                ->first();
+            $certificateParticipant = $this->resolveOrCreateCertificateParticipant($course, $courseItem, $certificate, $userId);
         }
 
         $course->append(['has_active_access', 'is_fully_paid']);
@@ -85,7 +110,7 @@ class CourseController extends Controller
             'course' => $course,
             'courseRating' => $courseRating,
             'certificate' => $certificate,
-            'certificateParticipant' => $certificateParticipant,
+            'certificateParticipant' => ($course->is_installment && !$course->isFullyPaid()) ? null : $certificateParticipant,
             'active_installment' => $activeInstallment,
         ]);
     }
@@ -144,9 +169,7 @@ class CourseController extends Controller
                 return back()->with('error', 'Sertifikat belum dibuat untuk course ini.');
             }
 
-            $participant = CertificateParticipant::where('certificate_id', $certificate->id)
-                ->where('user_id', $userId)
-                ->first();
+            $participant = $this->resolveOrCreateCertificateParticipant($course, $courseItem, $certificate, $userId);
 
             if (!$participant) {
                 return back()->with('error', 'Data participant sertifikat tidak ditemukan.');
@@ -217,9 +240,7 @@ class CourseController extends Controller
                 return back()->with('error', 'Sertifikat belum dibuat untuk course ini.');
             }
 
-            $participant = CertificateParticipant::where('certificate_id', $certificate->id)
-                ->where('user_id', $userId)
-                ->first();
+            $participant = $this->resolveOrCreateCertificateParticipant($course, $courseItem, $certificate, $userId);
 
             if (!$participant) {
                 return back()->with('error', 'Data participant sertifikat tidak ditemukan.');
@@ -233,5 +254,24 @@ class CourseController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal memuat preview sertifikat: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Resolve or create the certificate participant record once a course is paid and completed.
+     */
+    private function resolveOrCreateCertificateParticipant(Invoice $course, $courseItem, Certificate $certificate, $userId): ?CertificateParticipant
+    {
+        $participant = CertificateParticipant::where('certificate_id', $certificate->id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$participant && $course->isFullyPaid() && $courseItem->canDownloadCertificate()) {
+            $participant = CertificateParticipant::create([
+                'certificate_id' => $certificate->id,
+                'user_id' => $userId,
+            ]);
+        }
+
+        return $participant;
     }
 }

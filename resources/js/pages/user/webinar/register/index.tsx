@@ -976,7 +976,7 @@ export default function RegisterWebinar({
 
                     {/* Payment Section */}
                     <div className={!pendingInvoice ? 'lg:col-span-1' : 'lg:col-span-3'}>
-                        {hasAccess ? (
+                        {hasAccess && (!activeInstallment || activeInstallment.is_fully_paid) ? (
                             <div className="flex h-full flex-col items-center justify-center space-y-4 rounded-2xl border bg-white/95 p-6 text-center shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
                                 <div className="rounded-full bg-green-100 p-4 dark:bg-green-900/30">
                                     <BadgeCheck size={48} className="text-green-600 dark:text-green-400" />

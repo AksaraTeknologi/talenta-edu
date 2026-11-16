@@ -43,7 +43,16 @@ class BundleController extends Controller
 
         $totalRevenue = $isStaff
             ? 0
-            : Invoice::where('status', 'paid')
+            : Invoice::where(function ($q) {
+                    $q->whereIn('status', ['paid', 'completed'])
+                        ->orWhere(function ($sq) {
+                            $sq->where('status', 'installment_pending')
+                                ->whereHas('installmentTerms', function ($tq) {
+                                    $tq->where('installment_number', 1)->where('status', 'paid');
+                                });
+                        });
+                })
+                ->whereNull('parent_invoice_id')
                 ->whereHas('bundleEnrollments')
                 ->sum('nett_amount');
 

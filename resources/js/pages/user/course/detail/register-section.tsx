@@ -7,6 +7,7 @@ import { BadgeCheck, BookOpen, Calendar, ChartBar, Clock, FileText, MessageCircl
 import { useTranslation } from 'react-i18next';
 
 interface Course {
+    slug?: string;
     title: string;
     thumbnail?: string | null;
     strikethrough_price: number;
@@ -41,7 +42,7 @@ export default function RegisterSection({ course }: { course: Course }) {
     let warningMessage: string | null = null;
 
     if (!isLoggedIn) {
-        registrationUrl = course.registration_url;
+        registrationUrl = course.slug ? `/course/${course.slug}/checkout` : course.registration_url;
         buttonText = t('course.detail.btnRegisterLogin', 'Login untuk Mendaftar');
         warningMessage = t('course.detail.warningLogin', 'Anda harus login terlebih dahulu!');
     } else if (!isProfileComplete) {
@@ -49,7 +50,7 @@ export default function RegisterSection({ course }: { course: Course }) {
         buttonText = t('course.detail.btnCompleteProfile', 'Lengkapi Profil untuk Mendaftar');
         warningMessage = t('course.detail.warningProfile', 'Profil Anda belum lengkap!');
     } else {
-        registrationUrl = course.registration_url;
+        registrationUrl = course.slug ? `/course/${course.slug}/checkout` : course.registration_url;
         buttonText = t('course.detail.btnBuyNow', 'Beli Sekarang');
         warningMessage = null;
     }

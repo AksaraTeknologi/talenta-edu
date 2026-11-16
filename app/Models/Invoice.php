@@ -148,6 +148,7 @@ class Invoice extends Model
             'total_terms' => $totalTerms,
             'paid_terms' => $paidTerms,
             'is_fully_paid' => $isFullyPaid,
+            'is_access_suspended' => $parentInvoice->isAccessSuspended(),
             'next_term' => $nextUnpaid ? [
                 'id' => $nextUnpaid->id,
                 'term_number' => $nextUnpaid->installment_number,

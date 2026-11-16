@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { rupiahFormatter } from '@/lib/utils';
+import { SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
 import { format, parseISO } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { AlertCircle, CheckCircle2, Clock, CreditCard, Sparkles } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, CreditCard, LogIn, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -73,13 +75,15 @@ export default function InstallmentOptions({
     onTermsAcceptedChange,
     onBeforePay,
 }: InstallmentOptionsProps) {
+    const { auth } = usePage<SharedData>().props;
     const [isLoading, setIsLoading] = useState(false);
 
     const ADMIN_FEE = 5000;
+    const isCourse = productType === 'course';
 
     const hasActiveInstallment = !!activeInstallment && (activeInstallment.terms?.length ?? 0) > 0;
     const isTermOverdueCheck = (dueDateStr?: string | null) => {
-        if (!dueDateStr) return false;
+        if (isCourse || !dueDateStr) return false;
         try {
             const d = typeof dueDateStr === 'string' ? parseISO(dueDateStr) : new Date(dueDateStr);
             if (isNaN(d.getTime())) return false;
@@ -91,7 +95,7 @@ export default function InstallmentOptions({
         }
     };
 
-    const isAnyTermOverdue = !hasActiveInstallment && terms.some((t) => isTermOverdueCheck(t.due_date));
+    const isAnyTermOverdue = !isCourse && !hasActiveInstallment && terms.some((t) => isTermOverdueCheck(t.due_date));
     const isFullyPaid = hasActiveInstallment && activeInstallment.is_fully_paid;
     const nextTerm = hasActiveInstallment ? activeInstallment.next_term : null;
 
@@ -105,6 +109,11 @@ export default function InstallmentOptions({
         : totalAmount;
 
     async function handlePayNextTerm() {
+        if (!auth?.user) {
+            toast.error('Silakan login terlebih dahulu untuk melanjutkan pembayaran cicilan.');
+            window.location.href = '/login';
+            return;
+        }
         if (!activeInstallment || !nextTerm) return;
 
         setIsLoading(true);
@@ -136,6 +145,17 @@ export default function InstallmentOptions({
     }
 
     async function handlePayInstallment() {
+        if (isAnyTermOverdue) {
+            toast.error('Masa pendaftaran / termin cicilan untuk program ini telah terlewati.');
+            return;
+        }
+
+        if (!auth?.user) {
+            toast.error('Silakan login terlebih dahulu untuk melanjutkan pembayaran cicilan.');
+            window.location.href = '/login';
+            return;
+        }
+
         if (termsAccepted !== undefined && !termsAccepted) {
             toast.error('Silakan setujui syarat dan ketentuan terlebih dahulu.');
             return;
@@ -327,6 +347,26 @@ export default function InstallmentOptions({
     // TAMPILAN AWAL (BELUM ADA CICILAN - BAYAR DP)
     return (
         <div className="space-y-4">
+            {/* Banner Login Diperlukan untuk Guest */}
+            {!auth?.user && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200 flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                        <LogIn className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                        <div>
+                            <p className="font-semibold">Login Diperlukan</p>
+                            <p className="mt-0.5 opacity-90 leading-relaxed">
+                                Silakan login terlebih dahulu untuk melanjutkan pembayaran cicilan.
+                            </p>
+                        </div>
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="shrink-0 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-100">
+                        <a href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`}>
+                            Login
+                        </a>
+                    </Button>
+                </div>
+            )}
+
             {/* Banner Overdue / Cicilan Ditutup */}
             {isAnyTermOverdue && (
                 <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3.5 text-xs text-destructive dark:text-red-400 flex items-start gap-2.5">
@@ -383,7 +423,9 @@ export default function InstallmentOptions({
                                         <p className="font-medium text-foreground">{i === 0 ? 'Termin 1 (DP)' : `Termin ke-${term.term_number}`}</p>
                                         <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
                                             <Clock className="h-3 w-3" />
-                                            {format(parseISO(term.due_date), 'dd MMMM yyyy', { locale: id })}
+                                            {isCourse
+                                                ? (i === 0 ? 'Hari ini (saat pendaftaran)' : `${i * 30} hari setelah pendaftaran`)
+                                                : formatDateSafe(term.due_date)}
                                         </p>
                                     </div>
                                 </div>

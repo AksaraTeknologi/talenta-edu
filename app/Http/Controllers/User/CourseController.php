@@ -37,8 +37,7 @@ class CourseController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myCourseIds = Invoice::with('courseItems.course.category')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->courseItems->pluck('course_id');
@@ -79,8 +78,7 @@ class CourseController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myCourseIds = Invoice::with('courseItems.course.category')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->courseItems->pluck('course_id');
@@ -129,20 +127,19 @@ class CourseController extends Controller
         if ($userId) {
             $activeInstallment = Invoice::getActiveInstallmentForUser($userId, 'course', $course->id);
 
-            $hasAccess = Invoice::where('user_id', $userId)
-                ->where('status', 'paid')
+            $hasRegularPaid = Invoice::where('user_id', $userId)
+                ->whereNull('parent_invoice_id')
+                ->where('is_installment', false)
+                ->whereIn('status', ['paid', 'completed'])
                 ->whereHas('courseItems', function ($query) use ($course) {
                     $query->where('course_id', $course->id);
                 })
                 ->exists();
 
-            // Cek akses via cicilan aktif
-            if (!$hasAccess && $activeInstallment) {
-                $firstTermPaid = ($activeInstallment['terms'][0]['status'] ?? '') === 'paid';
-                $hasAccess = $firstTermPaid && empty($activeInstallment['access_suspended_at']);
-            }
+            $hasInstallmentPaid = $activeInstallment && ($activeInstallment['paid_terms'] ?? 0) > 0 && empty($activeInstallment['is_access_suspended']);
+            $hasAccess = $hasRegularPaid || $hasInstallmentPaid;
 
-            if (!$hasAccess) {
+            if (!$hasAccess && !$activeInstallment) {
                 $invoice = Invoice::where('user_id', $userId)
                     ->where('status', 'pending')
                     ->whereHas('courseItems', function ($query) use ($course) {

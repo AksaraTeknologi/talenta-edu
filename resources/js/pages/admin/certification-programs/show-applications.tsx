@@ -4,7 +4,7 @@ import { Separator } from '@/components/ui/separator';
 import { router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
-import { BookOpen, Building2, Eye, FileText, GraduationCap, Hash, Mail, Phone, User, X, ZoomIn } from 'lucide-react';
+import { BookOpen, Building2, CreditCard, Eye, FileText, GraduationCap, Hash, Mail, Phone, User, X, ZoomIn } from 'lucide-react';
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
@@ -21,6 +21,14 @@ interface RegularApplication {
     notes?: string | null;
     status: string;
     created_at: string;
+    has_paid?: boolean;
+    payment_status?: string;
+    is_installment?: boolean;
+    paid_terms?: number;
+    total_terms?: number;
+    installment_status?: string | null;
+    invoice_code?: string;
+    invoice_id?: string;
 }
 
 // ─── Scholarship Application ──────────────────────────────────────────────────
@@ -43,6 +51,14 @@ interface ScholarshipApplication {
     instagram_story_photo?: string | null;
     status: string;
     created_at: string;
+    has_paid?: boolean;
+    payment_status?: string;
+    is_installment?: boolean;
+    paid_terms?: number;
+    total_terms?: number;
+    installment_status?: string | null;
+    invoice_code?: string;
+    invoice_id?: string;
 }
 
 type Application = RegularApplication | ScholarshipApplication;
@@ -57,7 +73,8 @@ const statusMap: Record<string, { label: string; color: string }> = {
     pending: { label: 'Menunggu', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' },
     approved: { label: 'Disetujui', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
     rejected: { label: 'Ditolak', color: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' },
-    paid: { label: 'Lunas', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
+    paid: { label: 'Lunas', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300' },
+    installment: { label: 'Cicilan', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300' },
 };
 
 // ─── Custom Modal Portal ──────────────────────────────────────────────────────
@@ -332,7 +349,17 @@ function RegularDetailModal({
                     <div className="flex-1 min-w-0">
                         <h2 className="text-base font-semibold truncate text-gray-900 dark:text-zinc-100">{name}</h2>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <Badge className={`border-0 text-xs ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                            {app.installment_status ? (
+                                <Badge className="border border-amber-300 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-xs">
+                                    {app.installment_status}
+                                </Badge>
+                            ) : (app.payment_status === 'paid' || app.status === 'paid') ? (
+                                <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 text-xs">
+                                    Lunas
+                                </Badge>
+                            ) : (
+                                <Badge className={`border-0 text-xs ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                            )}
                             <span className="text-xs text-gray-400">
                                 {format(new Date(app.created_at), 'dd MMM yyyy HH:mm', { locale: id })}
                             </span>
@@ -374,6 +401,34 @@ function RegularDetailModal({
                                 onZoom={(src, alt) => { setLightboxSrc(src); setLightboxAlt(alt); }}
                             />
                         </div>
+
+                        {/* Payment Info */}
+                        {(app.invoice_code || app.installment_status || app.has_paid) && (
+                            <>
+                                <Separator />
+                                <div>
+                                    <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
+                                        Informasi Pembayaran
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {app.invoice_code && (
+                                            <InfoRow icon={Hash} label="Kode Invoice" value={app.invoice_code} />
+                                        )}
+                                        <InfoRow
+                                            icon={CreditCard}
+                                            label="Status Pembayaran"
+                                            value={
+                                                app.installment_status
+                                                    ? app.installment_status
+                                                    : app.payment_status === 'paid' || app.status === 'paid'
+                                                      ? 'Lunas'
+                                                      : 'Menunggu Pembayaran'
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         {app.notes && (
                             <>
@@ -505,7 +560,17 @@ function ScholarshipDetailModal({
                     <div className="flex-1 min-w-0">
                         <h2 className="text-base font-semibold truncate text-gray-900 dark:text-zinc-100">{app.name}</h2>
                         <div className="flex items-center gap-2 mt-0.5">
-                            <Badge className={`border-0 text-xs ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                            {app.installment_status ? (
+                                <Badge className="border border-amber-300 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-xs">
+                                    {app.installment_status}
+                                </Badge>
+                            ) : (app.payment_status === 'paid' || app.status === 'paid') ? (
+                                <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 text-xs">
+                                    Lunas
+                                </Badge>
+                            ) : (
+                                <Badge className={`border-0 text-xs ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                            )}
                             <span className="text-xs text-gray-400">Beasiswa</span>
                             <span className="text-xs text-gray-400">·</span>
                             <span className="text-xs text-gray-400">
@@ -552,6 +617,34 @@ function ScholarshipDetailModal({
                         </div>
 
                         <Separator />
+
+                        {/* Payment Information */}
+                        {(app.invoice_code || app.installment_status || app.has_paid) && (
+                            <>
+                                <div>
+                                    <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-zinc-500">
+                                        Informasi Pembayaran
+                                    </h4>
+                                    <div className="space-y-3">
+                                        {app.invoice_code && (
+                                            <InfoRow icon={Hash} label="Kode Invoice" value={app.invoice_code} />
+                                        )}
+                                        <InfoRow
+                                            icon={CreditCard}
+                                            label="Status Pembayaran"
+                                            value={
+                                                app.installment_status
+                                                    ? app.installment_status
+                                                    : app.payment_status === 'paid' || app.status === 'paid'
+                                                      ? 'Lunas'
+                                                      : 'Menunggu Pembayaran'
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                                <Separator />
+                            </>
+                        )}
 
                         {/* Documents */}
                         <div>
@@ -668,6 +761,11 @@ export default function CertificationProgramApplications({ applications, program
                                         <div className="text-muted-foreground text-xs">
                                             Daftar: {format(new Date(app.created_at), 'dd MMM yyyy HH:mm', { locale: id })}
                                         </div>
+                                        {app.invoice_code && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary font-mono">
+                                                {app.invoice_code}
+                                            </span>
+                                        )}
                                         {isScholarship && docCount !== null && (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
                                                 <FileText className="h-3 w-3" />
@@ -684,7 +782,17 @@ export default function CertificationProgramApplications({ applications, program
                                 </div>
 
                                 <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                                    <Badge className={`border-0 ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                                    {app.installment_status ? (
+                                        <Badge className="border border-amber-300 bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                            {app.installment_status}
+                                        </Badge>
+                                    ) : (app.payment_status === 'paid' || app.status === 'paid') ? (
+                                        <Badge className="border border-emerald-300 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                            Lunas
+                                        </Badge>
+                                    ) : (
+                                        <Badge className={`border-0 ${statusInfo.color}`}>{statusInfo.label}</Badge>
+                                    )}
 
                                     <Button
                                         variant="outline"

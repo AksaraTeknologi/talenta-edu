@@ -760,7 +760,7 @@ export default function Register({
         }
     }, [submitPayment, isLoggedIn, program.slug]);
 
-    if (hasAccess) {
+    if (hasAccess && (!activeInstallment || activeInstallment.is_fully_paid)) {
         return (
             <UserLayout>
                 <Head title={t('certificationProgram.register.headTitleEnrolled', 'Terdaftar - {{title}}', { title: program.title })} />

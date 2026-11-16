@@ -38,8 +38,7 @@ class WebinarController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myWebinarIds = Invoice::with('webinarItems.webinar.category')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->webinarItems->pluck('webinar_id');
@@ -81,8 +80,7 @@ class WebinarController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myWebinarIds = Invoice::with('webinarItems.webinar.category')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->webinarItems->pluck('webinar_id');
@@ -132,20 +130,19 @@ class WebinarController extends Controller
         if ($userId) {
             $activeInstallment = Invoice::getActiveInstallmentForUser($userId, 'webinar', $webinar->id);
 
-            $hasAccess = Invoice::where('user_id', $userId)
-                ->where('status', 'paid')
+            $hasRegularPaid = Invoice::where('user_id', $userId)
+                ->whereNull('parent_invoice_id')
+                ->where('is_installment', false)
+                ->whereIn('status', ['paid', 'completed'])
                 ->whereHas('webinarItems', function ($query) use ($webinar) {
                     $query->where('webinar_id', $webinar->id);
                 })
                 ->exists();
 
-            // Cek akses via cicilan aktif
-            if (!$hasAccess && $activeInstallment) {
-                $firstTermPaid = ($activeInstallment['terms'][0]['status'] ?? '') === 'paid';
-                $hasAccess = $firstTermPaid && empty($activeInstallment['access_suspended_at']);
-            }
+            $hasInstallmentPaid = $activeInstallment && ($activeInstallment['paid_terms'] ?? 0) > 0 && empty($activeInstallment['is_access_suspended']);
+            $hasAccess = $hasRegularPaid || $hasInstallmentPaid;
 
-            if (!$hasAccess) {
+            if (!$hasAccess && !$activeInstallment) {
                 $invoice = Invoice::where('user_id', $userId)
                     ->where('status', 'pending')
                     ->whereHas('webinarItems', function ($query) use ($webinar) {

@@ -9,6 +9,7 @@ use App\Models\EnrollmentCourse;
 use App\Models\EnrollmentBootcamp;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class CertificateParticipantController extends Controller
@@ -18,6 +19,12 @@ class CertificateParticipantController extends Controller
         $participant = CertificateParticipant::where('certificate_code', $code)
             ->with(['user', 'certificate.course', 'certificate.bootcamp', 'certificate.webinar'])
             ->firstOrFail();
+
+        $user = Auth::user();
+        $isPrivileged = $user && method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['admin', 'mentor', 'staff']);
+        if (!$isPrivileged && !$participant->isEligible()) {
+            abort(403, 'Sertifikat belum memenuhi kriteria kelulusan atau pelunasan pembayaran.');
+        }
 
         return Inertia::render('admin/certificates/detail-participant', [
             'participant' => $participant

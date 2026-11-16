@@ -1567,6 +1567,59 @@ class InstallmentFlowTest extends TestCase
                 'success' => false,
                 'message' => 'Semua termin cicilan untuk invoice ini sudah lunas.',
             ]);
+
+        // 3. Sending reminder when user has phone number (08...) and term is pending succeeds & normalizes to 628...
+        $term1->update(['status' => 'pending', 'paid_at' => null]);
+        $parent->update(['status' => 'installment_pending']);
+
+        $responseSuccess = $this->actingAs($this->admin)
+            ->postJson("/admin/installments/{$term1->id}/send-reminder");
+
+        $responseSuccess->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'phone' => '6281234567899',
+            ]);
+
+        // 4. Phone number starting with '8...' normalizes to '628...'
+        $noPhoneBuyer->update(['phone_number' => '81234567890']);
+
+        $responseNormalized = $this->actingAs($this->admin)
+            ->postJson("/admin/installments/{$term1->id}/send-reminder");
+
+        $responseNormalized->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'phone' => '6281234567890',
+            ]);
+
+        // 5. Sending reminder directly to a paid child term returns 422
+        $term1->update(['status' => 'paid', 'paid_at' => Carbon::now()]);
+        Invoice::create([
+            'user_id' => $noPhoneBuyer->id,
+            'invoice_code' => 'TLT-INST-020-T2',
+            'amount' => 605000,
+            'nett_amount' => 600000,
+            'status' => 'pending',
+            'is_installment' => false,
+            'parent_invoice_id' => $parent->id,
+            'installment_number' => 2,
+            'installment_due_date' => Carbon::now()->addDays(20),
+        ]);
+
+        $responsePaidChild = $this->actingAs($this->admin)
+            ->postJson("/admin/installments/{$term1->id}/send-reminder");
+
+        $responsePaidChild->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+            ]);
+
+        // 6. Sending reminder for non-existent invoice returns 404
+        $this->actingAs($this->admin)
+            ->postJson('/admin/installments/00000000-0000-0000-0000-000000000000/send-reminder')
+            ->assertStatus(404)
+            ->assertJson(['success' => false]);
     }
 
     /**

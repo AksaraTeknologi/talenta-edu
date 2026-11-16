@@ -29,7 +29,9 @@ class ReferralService
             return ['valid' => false, 'message' => 'Kode referral tidak boleh kosong.', 'referrer' => null];
         }
 
-        $referrer = User::where('referral_code', $code)->first();
+        $referrer = User::where('referral_code', $code)
+            ->orWhere('affiliate_code', $code)
+            ->first();
 
         if (!$referrer) {
             return ['valid' => false, 'message' => 'Kode referral tidak ditemukan.', 'referrer' => null];

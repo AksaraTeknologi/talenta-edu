@@ -9,6 +9,7 @@ use App\Models\CertificateParticipant;
 use App\Models\Certificate;
 use App\Mail\SendEmail;
 use App\Models\AffiliateEarning;
+use App\Models\CertificationProgramScholarshipApplication;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
 use App\Traits\WablasTrait;
@@ -233,9 +234,9 @@ class MidtransCallbackController extends Controller
             ])->find($invoice->parent_invoice_id);
 
             if ($parentInvoice) {
-                // Jika termin ke-1 (DP): aktifkan akses
+                // Jika termin ke-1 (DP): aktifkan akses tanpa menerbitkan peserta sertifikat sebelum lunas
                 if ($invoice->installment_number === 1) {
-                    $this->processInvoiceEnrollments($parentInvoice);
+                    $this->processInvoiceEnrollments($parentInvoice, false);
                 }
 
                 // Pulihkan akses jika sebelumnya dibekukan
@@ -247,6 +248,7 @@ class MidtransCallbackController extends Controller
                 // Cek apakah semua termin lunas
                 if ($parentInvoice->isFullyPaid()) {
                     $parentInvoice->update(['status' => 'paid', 'paid_at' => Carbon::now('Asia/Jakarta')]);
+                    $this->addEnrollmentToCertificateParticipants($parentInvoice);
                     event(new \App\Events\TransactionPaid($parentInvoice));
                     $this->sendWhatsAppInstallmentComplete($parentInvoice, $invoice);
                 } else {
@@ -269,6 +271,35 @@ class MidtransCallbackController extends Controller
         event(new \App\Events\TransactionPaid($invoice));
     }
 
+    private function getPhoneNumberForInvoice(Invoice $invoice): ?string
+    {
+        $user = $invoice->user;
+        if (!$user) {
+            return null;
+        }
+
+        if (!empty($user->phone_number)) {
+            return $user->phone_number;
+        }
+
+        $invoice->loadMissing('certificationProgramItems');
+        if ($invoice->certificationProgramItems->count() > 0) {
+            $certItem = $invoice->certificationProgramItems->first();
+            if ($certItem) {
+                $scholarshipApp = CertificationProgramScholarshipApplication::where('certification_program_id', $certItem->certification_program_id)
+                    ->where('email', $user->email)
+                    ->latest()
+                    ->first();
+                if ($scholarshipApp && !empty($scholarshipApp->phone)) {
+                    $user->update(['phone_number' => $scholarshipApp->phone]);
+                    return $scholarshipApp->phone;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Kirim notifikasi WhatsApp setelah pembayaran berhasil
      */
@@ -276,14 +307,16 @@ class MidtransCallbackController extends Controller
     {
         try {
             // Jika invoice adalah cicilan anak, delegasikan ke handler pesan cicilan termin
-            if ($invoice->isInstallmentChild() && $invoice->parentInvoice) {
-                $parentInvoice = $invoice->parentInvoice;
-                if ($parentInvoice->isFullyPaid()) {
-                    $this->sendWhatsAppInstallmentComplete($parentInvoice, $invoice);
-                } else {
-                    $this->sendWhatsAppTermPaid($invoice, $parentInvoice);
+            if ($invoice->isInstallmentChild()) {
+                $parentInvoice = $invoice->parentInvoice ?? Invoice::find($invoice->parent_invoice_id);
+                if ($parentInvoice) {
+                    if ($parentInvoice->isFullyPaid()) {
+                        $this->sendWhatsAppInstallmentComplete($parentInvoice, $invoice);
+                    } else {
+                        $this->sendWhatsAppTermPaid($invoice, $parentInvoice);
+                    }
+                    return;
                 }
-                return;
             }
 
             // Jika invoice adalah cicilan induk
@@ -306,8 +339,9 @@ class MidtransCallbackController extends Controller
             ]);
 
             $user = $invoice->user;
+            $rawPhone = $this->getPhoneNumberForInvoice($invoice);
 
-            if (!$user || !$user->phone_number) {
+            if (!$user || !$rawPhone) {
                 Log::warning('User does not have phone number', [
                     'user_id' => $user->id ?? null,
                     'invoice_code' => $invoice->invoice_code,
@@ -315,7 +349,7 @@ class MidtransCallbackController extends Controller
                 return;
             }
 
-            $phoneNumber = $this->formatPhoneNumber($user->phone_number);
+            $phoneNumber = $this->formatPhoneNumber($rawPhone);
             $message = $this->createWhatsAppSuccessMessage($invoice);
 
             $waData = [
@@ -612,7 +646,7 @@ class MidtransCallbackController extends Controller
         return $phoneNumber;
     }
 
-    private function processInvoiceEnrollments($invoice)
+    private function processInvoiceEnrollments($invoice, bool $includeCertificates = true)
     {
         $invoice->loadMissing([
             'courseItems',
@@ -630,7 +664,9 @@ class MidtransCallbackController extends Controller
                     'completed_at' => Carbon::now('Asia/Jakarta')
                 ]);
 
-                $this->addToCertificateParticipants('course', $item->course_id, $userId);
+                if ($includeCertificates) {
+                    $this->addToCertificateParticipants('course', $item->course_id, $userId);
+                }
             }
         }
 
@@ -640,7 +676,9 @@ class MidtransCallbackController extends Controller
                     'completed_at' => Carbon::now('Asia/Jakarta')
                 ]);
 
-                $this->addToCertificateParticipants('bootcamp', $item->bootcamp_id, $userId);
+                if ($includeCertificates) {
+                    $this->addToCertificateParticipants('bootcamp', $item->bootcamp_id, $userId);
+                }
             }
         }
 
@@ -650,7 +688,9 @@ class MidtransCallbackController extends Controller
                     'completed_at' => Carbon::now('Asia/Jakarta')
                 ]);
 
-                $this->addToCertificateParticipants('webinar', $item->webinar_id, $userId);
+                if ($includeCertificates) {
+                    $this->addToCertificateParticipants('webinar', $item->webinar_id, $userId);
+                }
             }
         }
 
@@ -674,9 +714,48 @@ class MidtransCallbackController extends Controller
                 }
 
                 $bundle = $enrollment->bundle;
-                if ($bundle && $bundle->bundleItems) {
+                if ($includeCertificates && $bundle && $bundle->bundleItems) {
                     foreach ($bundle->bundleItems as $bundleItem) {
                         $type = $bundleItem->getTypeSlug();
+                        $this->addToCertificateParticipants($type, $bundleItem->bundleable_id, $userId);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Menambahkan seluruh peserta program & bundle ke certificate participants
+     */
+    private function addEnrollmentToCertificateParticipants(Invoice $invoice): void
+    {
+        $invoice->loadMissing([
+            'courseItems',
+            'bootcampItems',
+            'webinarItems',
+            'bundleEnrollments.bundle.bundleItems.bundleable',
+        ]);
+
+        $userId = $invoice->user_id;
+
+        foreach ($invoice->courseItems as $courseItem) {
+            $this->addToCertificateParticipants('course', $courseItem->course_id, $userId);
+        }
+
+        foreach ($invoice->bootcampItems as $bootcampItem) {
+            $this->addToCertificateParticipants('bootcamp', $bootcampItem->bootcamp_id, $userId);
+        }
+
+        foreach ($invoice->webinarItems as $webinarItem) {
+            $this->addToCertificateParticipants('webinar', $webinarItem->webinar_id, $userId);
+        }
+
+        foreach ($invoice->bundleEnrollments as $bundleEnrollment) {
+            $bundle = $bundleEnrollment->bundle;
+            if ($bundle && $bundle->bundleItems) {
+                foreach ($bundle->bundleItems as $bundleItem) {
+                    $type = $bundleItem->getTypeSlug();
+                    if ($type) {
                         $this->addToCertificateParticipants($type, $bundleItem->bundleable_id, $userId);
                     }
                 }
@@ -743,7 +822,7 @@ class MidtransCallbackController extends Controller
             }
         } else {
             $defaultAffiliate = User::where('affiliate_code', 'TAL2025')->first()
-                ?? User::role('affiliate')->first();
+                ?? User::whereHas('roles', fn ($q) => $q->where('name', 'affiliate'))->first();
 
             if ($defaultAffiliate && $defaultAffiliate->id !== $invoice->user_id) {
                 $invoice->update(['referred_by_user_id' => $defaultAffiliate->id]);
@@ -751,13 +830,17 @@ class MidtransCallbackController extends Controller
                 if ($defaultAffiliate->affiliate_status === 'Active' && (float) $defaultAffiliate->commission > 0) {
                     $commissionAmount = $invoice->nett_amount * ($defaultAffiliate->commission / 100);
 
-                    AffiliateEarning::create([
-                        'affiliate_user_id' => $defaultAffiliate->id,
-                        'invoice_id' => $invoice->id,
-                        'amount' => $commissionAmount,
-                        'rate' => $defaultAffiliate->commission,
-                        'status' => 'approved',
-                    ]);
+                    AffiliateEarning::firstOrCreate(
+                        [
+                            'affiliate_user_id' => $defaultAffiliate->id,
+                            'invoice_id' => $invoice->id,
+                        ],
+                        [
+                            'amount' => $commissionAmount,
+                            'rate' => $defaultAffiliate->commission,
+                            'status' => 'approved',
+                        ]
+                    );
                 }
             }
         }
@@ -779,15 +862,19 @@ class MidtransCallbackController extends Controller
             if ($mentor && $mentor->hasRole('mentor') && $mentor->affiliate_status === 'Active' && (float) $mentor->commission > 0) {
                 $commissionAmount = $courseItem->price * ($mentor->commission / 100);
 
-                AffiliateEarning::create([
-                    'affiliate_user_id' => $mentor->id,
-                    'invoice_id' => $invoice->id,
-                    'amount' => $commissionAmount,
-                    'rate' => $mentor->commission,
-                    'status' => 'approved',
-                    'type' => 'mentor_course',
-                    'course_id' => $course->id,
-                ]);
+                AffiliateEarning::firstOrCreate(
+                    [
+                        'affiliate_user_id' => $mentor->id,
+                        'invoice_id' => $invoice->id,
+                        'type' => 'mentor_course',
+                        'course_id' => $course->id,
+                    ],
+                    [
+                        'amount' => $commissionAmount,
+                        'rate' => $mentor->commission,
+                        'status' => 'approved',
+                    ]
+                );
             }
         }
     }
@@ -985,7 +1072,17 @@ class MidtransCallbackController extends Controller
         } elseif ($isCompleted) {
             $message .= "*Status Cicilan:*\n";
             $message .= "🎉 Status: *LUNAS (Semua {$totalTerms} termin selesai)*\n";
-            $message .= "🏆 Sertifikat program dapat diakses melalui profil Anda setelah menyelesaikan pembelajaran.\n\n";
+            $message .= "🏆 Sertifikat dan akses materi program dapat diakses melalui profil Anda: {$profileUrl}\n";
+            if ($itemType === 'course') {
+                $message .= "📜 Menu Kelas Saya (Sertifikat): " . route('profile.courses') . "\n";
+            } elseif ($itemType === 'bootcamp') {
+                $message .= "📜 Menu Bootcamp Saya: " . route('profile.bootcamps') . "\n";
+            } elseif ($itemType === 'webinar') {
+                $message .= "📜 Menu Webinar Saya: " . route('profile.webinars') . "\n";
+            } elseif ($itemType === 'certification_program') {
+                $message .= "📜 Menu Sertifikasi Saya: " . route('profile.certification-programs') . "\n";
+            }
+            $message .= "\n";
         }
 
         // 4. Cara Mengakses Materi
@@ -1109,12 +1206,12 @@ class MidtransCallbackController extends Controller
     private function sendWhatsAppTermPaid(Invoice $childInvoice, Invoice $parentInvoice): void
     {
         try {
-            $user = $parentInvoice->user;
-            if (!$user?->phone_number) {
+            $rawPhone = $this->getPhoneNumberForInvoice($parentInvoice);
+            if (!$rawPhone) {
                 return;
             }
 
-            $phoneNumber = $this->formatPhoneNumber($user->phone_number);
+            $phoneNumber = $this->formatPhoneNumber($rawPhone);
             $message = $this->createWhatsAppInstallmentMessage($childInvoice, $parentInvoice, false);
 
             self::sendText([['phone' => $phoneNumber, 'message' => $message, 'isGroup' => 'false']]);
@@ -1129,8 +1226,8 @@ class MidtransCallbackController extends Controller
     private function sendWhatsAppInstallmentComplete(Invoice $parentInvoice, ?Invoice $lastChildInvoice = null): void
     {
         try {
-            $user = $parentInvoice->user;
-            if (!$user?->phone_number) {
+            $rawPhone = $this->getPhoneNumberForInvoice($parentInvoice);
+            if (!$rawPhone) {
                 return;
             }
 
@@ -1139,7 +1236,7 @@ class MidtransCallbackController extends Controller
                 $childInvoice = $parentInvoice;
             }
 
-            $phoneNumber = $this->formatPhoneNumber($user->phone_number);
+            $phoneNumber = $this->formatPhoneNumber($rawPhone);
             $message = $this->createWhatsAppInstallmentMessage($childInvoice, $parentInvoice, true);
 
             self::sendText([['phone' => $phoneNumber, 'message' => $message, 'isGroup' => 'false']]);

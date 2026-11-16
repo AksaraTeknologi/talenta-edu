@@ -49,8 +49,7 @@ class CertificationProgramController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myProgramIds = Invoice::with('certificationProgramItems')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->certificationProgramItems->pluck('certification_program_id');
@@ -117,8 +116,7 @@ class CertificationProgramController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myProgramIds = Invoice::with('certificationProgramItems')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->certificationProgramItems->pluck('certification_program_id');
@@ -179,20 +177,19 @@ class CertificationProgramController extends Controller
             $userId = Auth::id();
             $activeInstallment = Invoice::getActiveInstallmentForUser($userId, 'certification_program', $program->id);
 
-            $hasAccess = Invoice::where('user_id', $userId)
-                ->where('status', 'paid')
+            $hasRegularPaid = Invoice::where('user_id', $userId)
+                ->whereNull('parent_invoice_id')
+                ->where('is_installment', false)
+                ->whereIn('status', ['paid', 'completed'])
                 ->whereHas('certificationProgramItems', function ($query) use ($program) {
                     $query->where('certification_program_id', $program->id);
                 })
                 ->exists();
 
-            // Cek akses via cicilan aktif
-            if (!$hasAccess && $activeInstallment) {
-                $firstTermPaid = ($activeInstallment['terms'][0]['status'] ?? '') === 'paid';
-                $hasAccess = $firstTermPaid && empty($activeInstallment['access_suspended_at']);
-            }
+            $hasInstallmentPaid = $activeInstallment && ($activeInstallment['paid_terms'] ?? 0) > 0 && empty($activeInstallment['is_access_suspended']);
+            $hasAccess = $hasRegularPaid || $hasInstallmentPaid;
 
-            if (!$hasAccess) {
+            if (!$hasAccess && !$activeInstallment) {
                 $pendingInvoice = Invoice::where('user_id', $userId)
                     ->where('status', 'pending')
                     ->whereHas('certificationProgramItems', function ($query) use ($program) {

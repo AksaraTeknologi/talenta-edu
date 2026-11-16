@@ -119,7 +119,14 @@ export default function ShowCertificationProgram({ program, applications, transa
     const typeLabel = program.type === 'scholarship' ? 'Beasiswa' : 'Reguler';
     const typeColor = program.type === 'scholarship' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800';
 
-    const approvedApplications = applications.filter((a) => a.status === 'approved');
+    const approvedApplications = applications.filter(
+        (a) =>
+            a.status === 'approved' ||
+            a.status === 'paid' ||
+            a.status === 'installment' ||
+            !!(a as any).has_paid ||
+            !!(a as any).installment_status,
+    );
     const paidTransactionsCount = transactions.filter((t) => t.status === 'paid').length;
 
     const totalSchedules = (program.schedules?.length ?? 0) + (program.type === 'scholarship' ? (program.socializationSchedules?.length ?? 0) : 0);

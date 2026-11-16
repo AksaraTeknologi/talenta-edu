@@ -229,16 +229,130 @@ class CertificationProgramController extends Controller
     {
         $program = CertificationProgram::with(['category', 'mentors', 'schedules', 'socializationSchedules', 'installmentTerms'])->findOrFail($id);
 
+        // Ambil transaksi utama yang valid (lunas atau cicilan berjalan dengan minimal termin terbayar)
+        $paidOrInstallmentInvoices = Invoice::with(['user', 'installmentTerms'])
+            ->whereNull('parent_invoice_id')
+            ->whereHas('certificationProgramItems', function ($query) use ($id) {
+                $query->where('certification_program_id', $id);
+            })
+            ->where(function ($q) {
+                $q->whereIn('status', ['paid', 'completed'])
+                    ->orWhere(function ($sq) {
+                        $sq->where(function ($inner) {
+                            $inner->where('is_installment', true)
+                                ->orWhere('status', 'installment_pending');
+                        })->whereHas('installmentTerms', function ($tq) {
+                            $tq->where('status', 'paid');
+                        });
+                    });
+            })
+            ->latest()
+            ->get();
+
         $applications = [];
         if ($program->type === 'scholarship') {
-            $applications = CertificationProgramScholarshipApplication::where('certification_program_id', $program->id)
+            $scholarshipApps = CertificationProgramScholarshipApplication::where('certification_program_id', $program->id)
                 ->latest()
                 ->get();
+
+            $invoicesByEmail = $paidOrInstallmentInvoices->keyBy(function ($inv) {
+                return strtolower(trim($inv->user->email ?? ''));
+            });
+
+            $applications = $scholarshipApps->map(function ($app) use ($invoicesByEmail) {
+                $email = strtolower(trim($app->email));
+                $inv = $invoicesByEmail->get($email);
+
+                $appData = $app->toArray();
+                if ($inv) {
+                    $terms = $inv->installmentTerms;
+                    $totalTerms = $terms->count();
+                    $paidTerms = $terms->where('status', 'paid')->count();
+                    $isInstallment = $inv->is_installment || $inv->status === 'installment_pending' || $totalTerms > 0;
+                    $isFullyPaid = ($inv->status === 'paid' || $inv->status === 'completed') || ($isInstallment && $totalTerms > 0 && $paidTerms === $totalTerms);
+
+                    $appData['has_paid'] = true;
+                    $appData['payment_status'] = $isFullyPaid ? 'paid' : ($isInstallment ? 'installment' : $inv->status);
+                    $appData['is_installment'] = $isInstallment;
+                    $appData['paid_terms'] = $paidTerms;
+                    $appData['total_terms'] = $totalTerms;
+                    $appData['installment_status'] = $isInstallment ? ($isFullyPaid ? 'Cicilan Lunas' : "Cicilan ({$paidTerms}/{$totalTerms})") : null;
+                    $appData['invoice_code'] = $inv->invoice_code;
+                    $appData['invoice_id'] = $inv->id;
+                }
+                return $appData;
+            })->values()->all();
         } else {
-            $applications = CertificationProgramApplication::with('user')
+            $regularApps = CertificationProgramApplication::with('user')
                 ->where('certification_program_id', $program->id)
                 ->latest()
                 ->get();
+
+            $appsByUserId = $regularApps->keyBy('user_id');
+            $mergedApplications = collect();
+
+            foreach ($regularApps as $app) {
+                $inv = $paidOrInstallmentInvoices->firstWhere('user_id', $app->user_id);
+                $appData = $app->toArray();
+
+                if ($inv) {
+                    $terms = $inv->installmentTerms;
+                    $totalTerms = $terms->count();
+                    $paidTerms = $terms->where('status', 'paid')->count();
+                    $isInstallment = $inv->is_installment || $inv->status === 'installment_pending' || $totalTerms > 0;
+                    $isFullyPaid = ($inv->status === 'paid' || $inv->status === 'completed') || ($isInstallment && $totalTerms > 0 && $paidTerms === $totalTerms);
+
+                    $appData['has_paid'] = true;
+                    $appData['payment_status'] = $isFullyPaid ? 'paid' : ($isInstallment ? 'installment' : $inv->status);
+                    $appData['is_installment'] = $isInstallment;
+                    $appData['paid_terms'] = $paidTerms;
+                    $appData['total_terms'] = $totalTerms;
+                    $appData['installment_status'] = $isInstallment ? ($isFullyPaid ? 'Cicilan Lunas' : "Cicilan ({$paidTerms}/{$totalTerms})") : null;
+                    $appData['invoice_code'] = $inv->invoice_code;
+                    $appData['invoice_id'] = $inv->id;
+                }
+
+                $mergedApplications->push($appData);
+            }
+
+            foreach ($paidOrInstallmentInvoices as $inv) {
+                if (!$appsByUserId->has($inv->user_id) && $inv->user) {
+                    $terms = $inv->installmentTerms;
+                    $totalTerms = $terms->count();
+                    $paidTerms = $terms->where('status', 'paid')->count();
+                    $isInstallment = $inv->is_installment || $inv->status === 'installment_pending' || $totalTerms > 0;
+                    $isFullyPaid = ($inv->status === 'paid' || $inv->status === 'completed') || ($isInstallment && $totalTerms > 0 && $paidTerms === $totalTerms);
+
+                    $mergedApplications->push([
+                        'id' => 'inv-' . $inv->id,
+                        'certification_program_id' => $program->id,
+                        'user_id' => $inv->user_id,
+                        'user' => [
+                            'id' => $inv->user->id,
+                            'name' => $inv->user->name,
+                            'email' => $inv->user->email,
+                            'phone_number' => $inv->user->phone_number,
+                        ],
+                        'name' => $inv->user->name,
+                        'email' => $inv->user->email,
+                        'phone' => $inv->user->phone_number,
+                        'document_attachment' => null,
+                        'notes' => null,
+                        'status' => $isFullyPaid ? 'paid' : ($isInstallment ? 'installment' : 'approved'),
+                        'has_paid' => true,
+                        'payment_status' => $isFullyPaid ? 'paid' : ($isInstallment ? 'installment' : $inv->status),
+                        'is_installment' => $isInstallment,
+                        'paid_terms' => $paidTerms,
+                        'total_terms' => $totalTerms,
+                        'installment_status' => $isInstallment ? ($isFullyPaid ? 'Cicilan Lunas' : "Cicilan ({$paidTerms}/{$totalTerms})") : null,
+                        'invoice_code' => $inv->invoice_code,
+                        'invoice_id' => $inv->id,
+                        'created_at' => $inv->created_at->toISOString(),
+                    ]);
+                }
+            }
+
+            $applications = $mergedApplications->values()->all();
         }
 
         $transactionQuery = Invoice::with([

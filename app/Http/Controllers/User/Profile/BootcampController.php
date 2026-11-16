@@ -91,7 +91,7 @@ class BootcampController extends Controller
         return Inertia::render('user/profile/bootcamp/detail', [
             'bootcamp' => $bootcamp,
             'certificate' => $certificate,
-            'certificateParticipant' => $certificateParticipant,
+            'certificateParticipant' => ($bootcamp->is_installment && !$bootcamp->isFullyPaid()) ? null : $certificateParticipant,
             'active_installment' => $activeInstallment,
         ]);
     }

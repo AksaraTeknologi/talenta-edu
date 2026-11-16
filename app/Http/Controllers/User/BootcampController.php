@@ -36,8 +36,7 @@ class BootcampController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myBootcampIds = Invoice::with('bootcampItems.bootcamp.category')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->bootcampItems->pluck('bootcamp_id');
@@ -79,8 +78,7 @@ class BootcampController extends Controller
         if (Auth::check()) {
             $userId = Auth::id();
             $myBootcampIds = Invoice::with('bootcampItems.bootcamp.category')
-                ->where('user_id', $userId)
-                ->where('status', 'paid')
+                ->purchasedByUser($userId)
                 ->get()
                 ->flatMap(function ($invoice) {
                     return $invoice->bootcampItems->pluck('bootcamp_id');
@@ -139,7 +137,8 @@ class BootcampController extends Controller
                 ->exists();
 
             $isInstallmentCompleted = $activeInstallment && $activeInstallment['is_fully_paid'];
-            $hasAccess = $hasRegularPaid || $isInstallmentCompleted;
+            $hasInstallmentPaid = $activeInstallment && ($activeInstallment['paid_terms'] ?? 0) > 0 && empty($activeInstallment['is_access_suspended']);
+            $hasAccess = $hasRegularPaid || $isInstallmentCompleted || $hasInstallmentPaid;
 
             if (!$hasAccess && !$activeInstallment) {
                 $invoice = Invoice::where('user_id', $userId)

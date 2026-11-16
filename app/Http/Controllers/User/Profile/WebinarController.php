@@ -88,7 +88,7 @@ class WebinarController extends Controller
         return Inertia::render('user/profile/webinar/detail', [
             'webinar' => $webinar,
             'certificate' => $certificate,
-            'certificateParticipant' => $certificateParticipant,
+            'certificateParticipant' => ($webinar->is_installment && !$webinar->isFullyPaid()) ? null : $certificateParticipant,
             'active_installment' => $activeInstallment,
         ]);
     }

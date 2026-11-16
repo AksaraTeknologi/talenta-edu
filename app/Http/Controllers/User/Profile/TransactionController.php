@@ -4,6 +4,7 @@ namespace App\Http\Controllers\User\Profile;
 
 use App\Http\Controllers\Controller;
 use App\Models\Invoice;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
@@ -53,6 +54,14 @@ class TransactionController extends Controller
         if ($invoice->user_id !== Auth::id() && (!Auth::user() || !Auth::user()->hasRole('admin'))) {
             abort(403);
         }
+
+        // Tambahkan is_overdue ke setiap termin cicilan
+        $invoice->installmentTerms->transform(function ($term) {
+            $term->is_overdue = $term->installment_due_date
+                && $term->status !== 'paid'
+                && Carbon::now('Asia/Jakarta')->gt(Carbon::parse($term->installment_due_date)->endOfDay());
+            return $term;
+        });
 
         return Inertia::render('user/profile/transaction/show', ['invoice' => $invoice]);
     }
