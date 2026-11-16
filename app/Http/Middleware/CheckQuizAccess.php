@@ -29,8 +29,7 @@ class CheckQuizAccess
             $quiz = Quiz::with(['lesson.module.course'])->findOrFail($quizId);
             $course = $quiz->lesson->module->course;
 
-            $isEnrolled = Invoice::where('user_id', $user->id)
-                ->where('status', 'paid')
+            $isEnrolled = Invoice::accessibleForUser($user->id)
                 ->whereHas('courseItems', function ($query) use ($course) {
                     $query->where('course_id', $course->id);
                 })

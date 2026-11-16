@@ -114,34 +114,69 @@ class UserController extends Controller
         $users = $query->withCount([
                 'courseEnrollments as courses_count' => function ($query) {
                     $query->whereHas('invoice', function ($q) {
-                        $q->where('status', 'paid');
+                        $q->whereNull('parent_invoice_id')
+                            ->where(function ($sq) {
+                                $sq->whereIn('status', ['paid', 'completed'])
+                                    ->orWhere(function ($iq) {
+                                        $iq->where('status', 'installment_pending')
+                                            ->whereHas('installmentTerms', fn($tq) => $tq->where('installment_number', 1)->where('status', 'paid'));
+                                    });
+                            });
                     });
                 },
                 'bootcampEnrollments as bootcamps_count' => function ($query) {
                     $query->whereHas('invoice', function ($q) {
-                        $q->where('status', 'paid');
+                        $q->whereNull('parent_invoice_id')
+                            ->where(function ($sq) {
+                                $sq->whereIn('status', ['paid', 'completed'])
+                                    ->orWhere(function ($iq) {
+                                        $iq->where('status', 'installment_pending')
+                                            ->whereHas('installmentTerms', fn($tq) => $tq->where('installment_number', 1)->where('status', 'paid'));
+                                    });
+                            });
                     });
                 },
                 'webinarEnrollments as webinars_count' => function ($query) {
                     $query->whereHas('invoice', function ($q) {
-                        $q->where('status', 'paid');
+                        $q->whereNull('parent_invoice_id')
+                            ->where(function ($sq) {
+                                $sq->whereIn('status', ['paid', 'completed'])
+                                    ->orWhere(function ($iq) {
+                                        $iq->where('status', 'installment_pending')
+                                            ->whereHas('installmentTerms', fn($tq) => $tq->where('installment_number', 1)->where('status', 'paid'));
+                                    });
+                            });
                     });
                 },
                 'certificationProgramEnrollments as certification_programs_count' => function ($query) {
                     $query->whereHas('invoice', function ($q) {
-                        $q->where('status', 'paid');
+                        $q->whereNull('parent_invoice_id')
+                            ->where(function ($sq) {
+                                $sq->whereIn('status', ['paid', 'completed'])
+                                    ->orWhere(function ($iq) {
+                                        $iq->where('status', 'installment_pending')
+                                            ->whereHas('installmentTerms', fn($tq) => $tq->where('installment_number', 1)->where('status', 'paid'));
+                                    });
+                            });
                     });
                 }
             ])
             ->with(['invoices' => function ($query) {
-                $query->where('status', 'paid')
+                $query->whereNull('parent_invoice_id')
+                    ->where(function ($sq) {
+                        $sq->whereIn('status', ['paid', 'completed'])
+                            ->orWhere(function ($iq) {
+                                $iq->where('status', 'installment_pending')
+                                    ->whereHas('installmentTerms', fn($tq) => $tq->where('installment_number', 1)->where('status', 'paid'));
+                            });
+                    })
                     ->with([
                         'courseItems.course.category:id,name',
                         'bootcampItems.bootcamp.category:id,name',
                         'webinarItems.webinar.category:id,name',
                         'certificationProgramItems.certificationProgram.category:id,name',
                     ])
-                    ->latest('paid_at');
+                    ->latest('created_at');
             }])
             ->latest()
             ->paginate($perPage)

@@ -4,7 +4,9 @@ namespace Tests\Feature;
 
 use App\Models\Category;
 use App\Models\CertificationProgram;
+use App\Models\Course;
 use App\Models\EnrollmentCertificationProgram;
+use App\Models\EnrollmentCourse;
 use App\Models\Invoice;
 use App\Models\ProductInstallmentTerm;
 use App\Models\User;
@@ -180,6 +182,104 @@ class InstallmentProfileViewsTest extends TestCase
             ->where('stats.certificationPrograms', 0)
             ->where('stats.total', 0)
             ->has('recentProducts', 0)
+        );
+    }
+
+    public function test_profile_dashboard_and_course_views_work_after_course_installment_dp_paid()
+    {
+        $category = Category::first();
+        $course = Course::create([
+            'category_id' => $category->id,
+            'user_id' => $this->buyer->id,
+            'title' => 'Kelas Online Akuntansi Pajak',
+            'slug' => 'kelas-online-akuntansi-pajak',
+            'price' => 600000,
+            'strikethrough_price' => 0,
+            'status' => 'published',
+            'level' => 'beginner',
+            'installment_enabled' => true,
+        ]);
+
+        $parent = Invoice::create([
+            'user_id' => $this->buyer->id,
+            'invoice_code' => 'TLT-CRS-INST-01',
+            'amount' => 610000,
+            'nett_amount' => 600000,
+            'status' => 'installment_pending',
+            'is_installment' => true,
+        ]);
+
+        Invoice::create([
+            'user_id' => $this->buyer->id,
+            'invoice_code' => 'TLT-CRS-INST-01-T1',
+            'amount' => 305000,
+            'nett_amount' => 300000,
+            'status' => 'paid',
+            'paid_at' => Carbon::now(),
+            'is_installment' => false,
+            'parent_invoice_id' => $parent->id,
+            'installment_number' => 1,
+            'installment_due_date' => Carbon::now()->addDays(1),
+        ]);
+
+        Invoice::create([
+            'user_id' => $this->buyer->id,
+            'invoice_code' => 'TLT-CRS-INST-01-T2',
+            'amount' => 305000,
+            'nett_amount' => 300000,
+            'status' => 'pending',
+            'is_installment' => false,
+            'parent_invoice_id' => $parent->id,
+            'installment_number' => 2,
+            'installment_due_date' => Carbon::now()->addDays(30),
+        ]);
+
+        EnrollmentCourse::create([
+            'invoice_id' => $parent->id,
+            'course_id' => $course->id,
+            'price' => 600000,
+            'progress' => 0,
+            'completed_at' => null,
+        ]);
+
+        // 1. /profile/dashboard ("Profil Saya") must not crash with SQL error on courses.group_url
+        $dashboardResp = $this->actingAs($this->buyer)->get(route('profile.index'));
+        $dashboardResp->assertStatus(200);
+        $dashboardResp->assertInertia(fn (Assert $page) => $page
+            ->component('user/profile/index')
+            ->where('stats.courses', 1)
+            ->where('stats.total', 1)
+            ->has('recentProducts', 1, fn (Assert $item) => $item
+                ->where('title', 'Kelas Online Akuntansi Pajak')
+                ->where('type', 'course')
+                ->where('is_installment', true)
+                ->where('is_fully_paid', false)
+                ->where('is_suspended', false)
+                ->etc()
+            )
+        );
+
+        // 2. /profile/my-courses
+        $coursesResp = $this->actingAs($this->buyer)->get(route('profile.courses'));
+        $coursesResp->assertStatus(200);
+
+        // 3. /profile/course/{slug} redirects to /profile/my-courses/{slug} and passes active_installment
+        $redirectResp = $this->actingAs($this->buyer)->get('/profile/course/' . $course->slug);
+        $redirectResp->assertRedirect('/profile/my-courses/' . $course->slug);
+
+        $detailResp = $this->actingAs($this->buyer)->get(route('profile.course.detail', ['course' => $course->slug]));
+        $detailResp->assertStatus(200);
+        $detailResp->assertInertia(fn (Assert $page) => $page
+            ->component('user/profile/course/detail')
+            ->where('course.id', $parent->id)
+            ->where('course.is_installment', true)
+            ->where('course.has_active_access', true)
+            ->where('course.is_fully_paid', false)
+            ->where('active_installment.parent_invoice_id', $parent->id)
+            ->where('active_installment.paid_terms', 1)
+            ->where('active_installment.total_terms', 2)
+            ->where('active_installment.is_fully_paid', false)
+            ->where('active_installment.next_term.term_number', 2)
         );
     }
 }

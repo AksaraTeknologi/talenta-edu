@@ -61,18 +61,24 @@ class ProductInstallmentTerm extends Model
         ->get();
 
         $newDueDate = $this->due_date ? \Carbon\Carbon::parse($this->due_date) : null;
+        $isCourseProduct = $product && str_ends_with(get_class($product), 'Course');
+        $now = \Carbon\Carbon::now('Asia/Jakarta');
 
         foreach ($childInvoices as $child) {
+            $effectiveDueDate = $newDueDate;
+            if ($isCourseProduct && $newDueDate && $newDueDate->copy()->endOfDay()->lt($now) && $child->installment_due_date) {
+                $effectiveDueDate = \Carbon\Carbon::parse($child->installment_due_date);
+            }
+
             $child->update([
                 'installment_term_id' => $this->id,
                 'amount' => $this->amount + $adminFeePerTerm,
                 'nett_amount' => $this->amount,
-                'installment_due_date' => $newDueDate,
+                'installment_due_date' => $effectiveDueDate,
             ]);
 
             // Jika parent invoice sedang disuspend tapi deadline baru sudah di masa depan (tidak overdue lagi)
-            if ($child->parentInvoice && $child->parentInvoice->access_suspended_at && $newDueDate) {
-                $now = \Carbon\Carbon::now('Asia/Jakarta');
+            if ($child->parentInvoice && $child->parentInvoice->access_suspended_at && $effectiveDueDate) {
                 $hasOtherOverdue = $child->parentInvoice->installmentTerms()
                     ->where('id', '!=', $child->id)
                     ->where('status', '!=', 'paid')
@@ -80,7 +86,7 @@ class ProductInstallmentTerm extends Model
                     ->where('installment_due_date', '<', $now->startOfDay())
                     ->exists();
 
-                if (!$hasOtherOverdue && $newDueDate->endOfDay()->gte($now)) {
+                if (!$hasOtherOverdue && $effectiveDueDate->copy()->endOfDay()->gte($now)) {
                     $child->parentInvoice->update(['access_suspended_at' => null]);
                 }
             }

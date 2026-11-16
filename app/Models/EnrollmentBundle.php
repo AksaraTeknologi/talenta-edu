@@ -38,9 +38,11 @@ class EnrollmentBundle extends Model
             switch ($item->bundleable_type) {
                 case Course::class:
                     $existingEnrollment = EnrollmentCourse::where('course_id', $bundleable->id)
-                        ->whereHas('invoice', function ($query) use ($userId) {
-                            $query->where('user_id', $userId)
-                                ->where('status', 'paid');
+                        ->where(function ($q) use ($userId) {
+                            $q->where('invoice_id', $this->invoice_id)
+                                ->orWhereHas('invoice', function ($query) use ($userId) {
+                                    $query->purchasedByUser($userId);
+                                });
                         })
                         ->exists();
 
@@ -56,9 +58,11 @@ class EnrollmentBundle extends Model
 
                 case Bootcamp::class:
                     $existingEnrollment = EnrollmentBootcamp::where('bootcamp_id', $bundleable->id)
-                        ->whereHas('invoice', function ($query) use ($userId) {
-                            $query->where('user_id', $userId)
-                                ->where('status', 'paid');
+                        ->where(function ($q) use ($userId) {
+                            $q->where('invoice_id', $this->invoice_id)
+                                ->orWhereHas('invoice', function ($query) use ($userId) {
+                                    $query->purchasedByUser($userId);
+                                });
                         })
                         ->exists();
 
@@ -74,9 +78,11 @@ class EnrollmentBundle extends Model
 
                 case Webinar::class:
                     $existingEnrollment = EnrollmentWebinar::where('webinar_id', $bundleable->id)
-                        ->whereHas('invoice', function ($query) use ($userId) {
-                            $query->where('user_id', $userId)
-                                ->where('status', 'paid');
+                        ->where(function ($q) use ($userId) {
+                            $q->where('invoice_id', $this->invoice_id)
+                                ->orWhereHas('invoice', function ($query) use ($userId) {
+                                    $query->purchasedByUser($userId);
+                                });
                         })
                         ->exists();
 

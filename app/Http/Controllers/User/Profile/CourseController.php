@@ -78,13 +78,18 @@ class CourseController extends Controller
                     ->count();
 
                 $actualProgress = round(($completedLessons / $totalLessons) * 100);
-                if ($actualProgress !== (int) $courseItem->progress) {
+                $expectedCompletedAt = $actualProgress >= 100 ? ($courseItem->completed_at ?? now()) : null;
+                if ($actualProgress !== (int) $courseItem->progress || ($actualProgress < 100 && $courseItem->completed_at !== null)) {
                     $courseItem->update([
                         'progress' => $actualProgress,
-                        'completed_at' => $actualProgress >= 100 ? ($courseItem->completed_at ?? now()) : null,
+                        'completed_at' => $expectedCompletedAt,
                     ]);
                     $courseItem->progress = $actualProgress;
+                    $courseItem->completed_at = $expectedCompletedAt;
                 }
+            } elseif ((int) $courseItem->progress < 100 && $courseItem->completed_at !== null) {
+                $courseItem->update(['completed_at' => null]);
+                $courseItem->completed_at = null;
             }
         }
 

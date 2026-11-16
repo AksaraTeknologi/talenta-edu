@@ -22,8 +22,7 @@ class CourseRatingController extends Controller
         $enrollment = EnrollmentCourse::where('course_id', $courseId)
             ->where('progress', 100)
             ->whereHas('invoice', function ($query) {
-                $query->where('user_id', Auth::id())
-                    ->where('status', 'paid');
+                $query->purchasedByUser(Auth::id());
             })
             ->first();
 

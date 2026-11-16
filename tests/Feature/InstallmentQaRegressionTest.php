@@ -106,7 +106,7 @@ class InstallmentQaRegressionTest extends TestCase
             'installment_enabled' => true,
         ]);
 
-        $this->get(route('course.checkout', $course->slug))->assertStatus(302);
+        $this->get(route('course.checkout', $course->slug))->assertStatus(200);
 
         $unverified = User::factory()->unverified()->create([
             'email' => 'unverified@qa.test',
@@ -583,5 +583,122 @@ class InstallmentQaRegressionTest extends TestCase
         $this->assertTrue($cpCourse->isEligible());
         $this->assertTrue($cpBoot->isEligible());
         $this->actingAs($this->buyer)->get(route('certificate.participant.detail', $cpBoot->certificate_code))->assertStatus(200);
+    }
+
+    public function test_course_installment_full_qa_flow_guest_unverified_past_course_profile_wa_and_admin_enrollments()
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            '*' => \Illuminate\Support\Facades\Http::response(['status' => true, 'message' => 'OK'], 200),
+        ]);
+
+        $mockMidtrans = \Mockery::mock(\App\Services\MidtransService::class);
+        $mockMidtrans->shouldReceive('createTransaction')
+            ->once()
+            ->andReturn([
+                'success' => true,
+                'redirect_url' => 'https://mock.payment.com/checkout/course-qa-url',
+                'snap_token' => 'mock-snap-course-qa',
+            ]);
+        $this->app->instance(\App\Services\MidtransService::class, $mockMidtrans);
+
+        $category = Category::create(['name' => 'Course Full QA', 'slug' => 'course-full-qa']);
+
+        // Course created in the past with past template term due_dates
+        $course = Course::create([
+            'category_id' => $category->id,
+            'user_id' => $this->mentor->id,
+            'title' => 'Kelas Online Pajak Terpadu',
+            'slug' => 'kelas-online-pajak-terpadu',
+            'price' => 600000,
+            'strikethrough_price' => 800000,
+            'status' => 'published',
+            'level' => 'beginner',
+            'installment_enabled' => true,
+            'created_at' => Carbon::now()->subMonths(3),
+        ]);
+
+        \App\Models\ProductInstallmentTerm::create([
+            'termable_type' => Course::class,
+            'termable_id' => $course->id,
+            'term_number' => 1,
+            'amount' => 300000,
+            'due_date' => Carbon::now()->subMonths(3)->format('Y-m-d'),
+        ]);
+        \App\Models\ProductInstallmentTerm::create([
+            'termable_type' => Course::class,
+            'termable_id' => $course->id,
+            'term_number' => 2,
+            'amount' => 300000,
+            'due_date' => Carbon::now()->subMonths(2)->format('Y-m-d'),
+        ]);
+
+        // 1. Guest User can access /course/{slug} and /course/{slug}/checkout without 403 or crash
+        $this->get(route('course.detail', ['course' => $course->slug]))->assertStatus(200);
+        $this->get(route('course.checkout', ['course' => $course->slug]))->assertStatus(200);
+
+        // 2. Unverified User (email_verified_at = null) can open checkout and create installment for past-created course
+        $unverifiedBuyer = User::factory()->create([
+            'name' => 'Unverified Course Buyer',
+            'email' => 'unverified-course@test.com',
+            'phone_number' => '081234567899',
+            'email_verified_at' => null,
+        ]);
+        $unverifiedBuyer->assignRole('user');
+
+        $this->actingAs($unverifiedBuyer)
+            ->get(route('course.checkout', ['course' => $course->slug]))
+            ->assertStatus(200);
+
+        $storeResp = $this->actingAs($unverifiedBuyer)
+            ->postJson('/invoice/installment', [
+                'type' => 'course',
+                'id' => $course->id,
+            ]);
+        $storeResp->assertStatus(200)->assertJson(['success' => true]);
+
+        $parentId = $storeResp->json('invoice_id');
+        $parent = Invoice::with('installmentTerms')->findOrFail($parentId);
+        $term1 = $parent->installmentTerms->firstWhere('installment_number', 1);
+        $term2 = $parent->installmentTerms->firstWhere('installment_number', 2);
+
+        $this->assertTrue(Carbon::parse($term1->installment_due_date)->endOfDay()->gte(Carbon::now('Asia/Jakarta')));
+        $this->assertTrue(Carbon::parse($term2->installment_due_date)->endOfDay()->gt(Carbon::now('Asia/Jakarta')));
+
+        // 3. Pay Termin 1 (DP) via Midtrans callback
+        $this->postGatewayTermSettlement($term1)->assertStatus(200);
+
+        $enrollment = EnrollmentCourse::where('invoice_id', $parent->id)->first();
+        $this->assertNotNull($enrollment);
+        $this->assertEquals(0, (int) $enrollment->progress);
+        $this->assertNull($enrollment->completed_at);
+
+        // 4. Access "Profil Saya" (/profile/dashboard) and "/profile/course/{slug}" after Termin 1 paid
+        $this->actingAs($unverifiedBuyer)->get(route('profile.index'))->assertStatus(200);
+        $this->actingAs($unverifiedBuyer)->get('/profile/course/' . $course->slug)->assertRedirect('/profile/my-courses/' . $course->slug);
+        $this->actingAs($unverifiedBuyer)->get(route('profile.course.detail', ['course' => $course->slug]))->assertStatus(200);
+
+        // 5. Admin Course Enrollments & Transactions after DP
+        $this->actingAs($this->admin)->get('/admin/courses/' . $course->id . '/enrollments')->assertRedirect('/admin/courses/' . $course->id);
+        $this->actingAs($this->admin)->get(route('courses.show', $course->id))->assertStatus(200);
+        $this->actingAs($this->admin)->get(route('courses.index'))->assertStatus(200);
+
+        // 6. Final Term (Pelunasan) WhatsApp message contains LUNAS and direct link to /profile/my-courses/{slug}
+        $term2->update(['status' => 'paid', 'paid_at' => Carbon::now()]);
+        $parent->update(['status' => 'paid', 'paid_at' => Carbon::now()]);
+
+        $invoiceController = app(\App\Http\Controllers\InvoiceController::class);
+        $ref = new \ReflectionMethod($invoiceController, 'createWhatsAppInstallmentMessage');
+        $ref->setAccessible(true);
+        $waCompleteMessage = $ref->invoke($invoiceController, $term2->fresh(), $parent->fresh(), true);
+
+        $this->assertStringContainsString('LUNAS', $waCompleteMessage);
+        $this->assertStringContainsString($course->title, $waCompleteMessage);
+        $this->assertStringContainsString('/profile/my-courses/' . $course->slug, $waCompleteMessage);
+
+        $midtransController = app(\App\Http\Controllers\MidtransCallbackController::class);
+        $refM = new \ReflectionMethod($midtransController, 'createWhatsAppInstallmentMessage');
+        $refM->setAccessible(true);
+        $waMidtransMessage = $refM->invoke($midtransController, $term2->fresh(), $parent->fresh(), true);
+        $this->assertStringContainsString('/profile/my-courses/' . $course->slug, $waMidtransMessage);
     }
 }

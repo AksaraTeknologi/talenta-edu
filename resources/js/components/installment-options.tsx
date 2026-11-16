@@ -111,7 +111,7 @@ export default function InstallmentOptions({
     async function handlePayNextTerm() {
         if (!auth?.user) {
             toast.error('Silakan login terlebih dahulu untuk melanjutkan pembayaran cicilan.');
-            window.location.href = '/login';
+            window.location.href = `/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`;
             return;
         }
         if (!activeInstallment || !nextTerm) return;
@@ -152,7 +152,7 @@ export default function InstallmentOptions({
 
         if (!auth?.user) {
             toast.error('Silakan login terlebih dahulu untuk melanjutkan pembayaran cicilan.');
-            window.location.href = '/login';
+            window.location.href = `/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`;
             return;
         }
 

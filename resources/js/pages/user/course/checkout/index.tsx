@@ -285,6 +285,12 @@ export default function CheckoutCourse({
     const handleFreeCheckout = (e: React.FormEvent) => {
         e.preventDefault();
 
+        if (!isLoggedIn) {
+            toast.error(t('course.checkout.loginRequiredDesc', 'Silakan login terlebih dahulu untuk melanjutkan checkout kelas'));
+            window.location.href = route('login', { redirect: window.location.href });
+            return;
+        }
+
         if (!isProfileComplete) {
             alert('Profil Anda belum lengkap! Harap lengkapi nomor telepon terlebih dahulu.');
             window.location.href = route('profile.edit');
@@ -313,6 +319,12 @@ export default function CheckoutCourse({
 
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!isLoggedIn) {
+            toast.error(t('course.checkout.loginRequiredDesc', 'Silakan login terlebih dahulu untuk melanjutkan checkout kelas'));
+            window.location.href = route('login', { redirect: window.location.href });
+            return;
+        }
 
         if (!isProfileComplete) {
             alert('Profil Anda belum lengkap! Harap lengkapi nomor telepon terlebih dahulu.');
@@ -421,7 +433,8 @@ export default function CheckoutCourse({
     //     return channel?.icon_url || '';
     // };
 
-    const formatExpiryTime = (expiresAt: string): { time: string; status: 'expired' | 'urgent' | 'normal' } => {
+    const formatExpiryTime = (expiresAt?: string | null): { time: string; status: 'expired' | 'urgent' | 'normal' } => {
+        if (!expiresAt) return { time: 'Normal', status: 'normal' };
         const now = new Date();
         const expiry = new Date(expiresAt);
         const diff = expiry.getTime() - now.getTime();
@@ -446,42 +459,7 @@ export default function CheckoutCourse({
         });
     };
 
-    if (!isLoggedIn) {
-        const currentUrl = window.location.href;
-        const loginUrl = route('login', { redirect: currentUrl });
-
-        return (
-            <div className="min-h-screen bg-[url('/assets/images/bg-product.png')] bg-cover bg-center bg-no-repeat">
-                <Head title={t('course.checkout.loginRequiredTitle', 'Login Diperlukan')} />
-                <section className="flex min-h-screen items-center justify-center px-4 py-12">
-                    <div className="w-full max-w-md">
-                        <div className="flex flex-col items-center justify-center space-y-6 rounded-2xl border bg-white/95 p-8 shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
-                            <div className="rounded-full bg-blue-100 p-6 dark:bg-blue-900/30">
-                                <User size={48} className="text-blue-600 dark:text-blue-400" />
-                            </div>
-                            <div className="text-center">
-                                <h2 className="mb-2 text-2xl font-bold">{t('course.checkout.loginRequiredTitle', 'Login Diperlukan')}</h2>
-                                <p className="text-gray-600 dark:text-gray-400">
-                                    {t('course.checkout.loginRequiredDesc', 'Silakan login terlebih dahulu untuk melanjutkan checkout kelas')}
-                                    {referralInfo.hasActive && t('course.checkout.referralCodeKept', '. Kode referral Anda akan tetap tersimpan')}
-                                </p>
-                            </div>
-                            <div className="flex w-full gap-3">
-                                <Button asChild className="flex-1" size="lg">
-                                    <a href={loginUrl}>{t('course.checkout.btnLogin', 'Login')}</a>
-                                </Button>
-                                <Button asChild variant="outline" className="flex-1" size="lg">
-                                    <Link href={route('register', referralInfo.code ? { ref: referralInfo.code } : {})}>{t('course.checkout.btnRegister', 'Daftar')}</Link>
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-            </div>
-        );
-    }
-
-    if (!isProfileComplete) {
+    if (isLoggedIn && !isProfileComplete) {
         return (
             <div className="min-h-screen bg-[url('/assets/images/bg-product.png')] bg-cover bg-center bg-no-repeat">
                 <Head title={t('course.checkout.title', 'Checkout Kelas')} />
@@ -879,6 +857,11 @@ export default function CheckoutCourse({
                                             onBeforePay={async () => {
                                                 if (!activeInstallment && !termsAccepted) {
                                                     toast.error('Anda harus menyetujui syarat dan ketentuan!');
+                                                    return false;
+                                                }
+                                                if (!isLoggedIn) {
+                                                    toast.error(t('course.checkout.loginRequiredDesc', 'Silakan login terlebih dahulu untuk melanjutkan checkout kelas'));
+                                                    window.location.href = route('login', { redirect: window.location.href });
                                                     return false;
                                                 }
                                                 if (!isProfileComplete) {

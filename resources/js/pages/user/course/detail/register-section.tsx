@@ -43,8 +43,8 @@ export default function RegisterSection({ course }: { course: Course }) {
 
     if (!isLoggedIn) {
         registrationUrl = course.slug ? `/course/${course.slug}/checkout` : course.registration_url;
-        buttonText = t('course.detail.btnRegisterLogin', 'Login untuk Mendaftar');
-        warningMessage = t('course.detail.warningLogin', 'Anda harus login terlebih dahulu!');
+        buttonText = t('course.detail.btnBuyNow', 'Beli Sekarang');
+        warningMessage = null;
     } else if (!isProfileComplete) {
         registrationUrl = route('profile.edit', { redirect: window.location.href });
         buttonText = t('course.detail.btnCompleteProfile', 'Lengkapi Profil untuk Mendaftar');
