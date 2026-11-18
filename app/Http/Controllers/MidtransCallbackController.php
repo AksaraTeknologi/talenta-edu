@@ -12,7 +12,7 @@ use App\Models\AffiliateEarning;
 use App\Models\CertificationProgramScholarshipApplication;
 use App\Models\User;
 use Illuminate\Support\Facades\Mail;
-use App\Traits\WablasTrait;
+use App\Traits\WhatsAppTrait;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,7 +20,7 @@ use App\Services\MidtransService;
 
 class MidtransCallbackController extends Controller
 {
-    use WablasTrait;
+    use WhatsAppTrait;
 
     protected $midtransService;
 

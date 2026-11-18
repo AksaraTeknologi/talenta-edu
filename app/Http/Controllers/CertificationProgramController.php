@@ -8,7 +8,7 @@ use App\Models\CertificationProgramScholarshipApplication;
 use App\Models\Category;
 use App\Models\Invoice;
 use App\Models\User;
-use App\Traits\WablasTrait;
+use App\Traits\WhatsAppTrait;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,7 +18,7 @@ use Inertia\Inertia;
 
 class CertificationProgramController extends Controller
 {
-    use WablasTrait;
+    use WhatsAppTrait;
 
     public function index(Request $request)
     {

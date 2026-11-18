@@ -15,7 +15,7 @@ use App\Models\Invoice;
 use App\Models\ProductInstallmentTerm;
 use App\Models\Webinar;
 use App\Services\MidtransService;
-use App\Traits\WablasTrait;
+use App\Traits\WhatsAppTrait;
 use Carbon\Carbon;
 use Haruncpi\LaravelIdGenerator\IdGenerator;
 use Illuminate\Http\Request;
@@ -26,7 +26,7 @@ use Inertia\Inertia;
 
 class InstallmentController extends Controller
 {
-    use WablasTrait;
+    use WhatsAppTrait;
 
     protected $midtransService;
 

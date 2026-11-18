@@ -23,7 +23,7 @@ use App\Models\Invoice;
 use App\Models\User;
 use App\Models\Webinar;
 use App\Services\TripayService;
-use App\Traits\WablasTrait;
+use App\Traits\WhatsAppTrait;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -42,7 +42,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class InvoiceController extends Controller
 {
-    use WablasTrait;
+    use WhatsAppTrait;
 
     protected $tripayService;
     protected $midtransService;
