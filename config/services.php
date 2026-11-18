@@ -73,4 +73,12 @@ return [
         ],
     ],
 
+    // Kirim peserta batch sertifikasi ke kelas brevetlearning.id (token klien integrasi, ability `enroll`).
+    'brevetlearning' => [
+        'url' => env('BREVETLEARNING_API_URL'),
+        'token' => env('BREVETLEARNING_ENROLL_TOKEN'),
+        'default_platform' => env('BREVETLEARNING_DEFAULT_PLATFORM'),
+        'timeout' => (int) env('BREVETLEARNING_API_TIMEOUT', 20),
+    ],
+
 ];

@@ -5,7 +5,8 @@ import { router } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { BookOpen, Building2, CreditCard, Eye, FileText, GraduationCap, Hash, Mail, Phone, User, X, ZoomIn } from 'lucide-react';
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
+import BrevetlearningPanel, { BrevetStatus } from './brevetlearning-panel';
 import { createPortal } from 'react-dom';
 import { useState } from 'react';
 
@@ -701,6 +702,10 @@ export default function CertificationProgramApplications({ applications, program
 
     const [selectedApp, setSelectedApp] = useState<Application | null>(null);
     const [detailOpen, setDetailOpen] = useState(false);
+    const [brevet, setBrevet] = useState<BrevetStatus | null>(null);
+    const handleBrevetStatus = useCallback((status: BrevetStatus | null) => setBrevet(status), []);
+    const brevetByEmail = new Map((brevet?.participants ?? []).map((p) => [p.email.toLowerCase(), p.in_class]));
+    const brevetLinked = !!brevet?.course && !brevet?.error;
 
     const openDetail = (app: Application) => {
         setSelectedApp(app);
@@ -726,6 +731,8 @@ export default function CertificationProgramApplications({ applications, program
                 )}
             </div>
 
+            <BrevetlearningPanel programId={programId} onStatus={handleBrevetStatus} />
+
             {applications.length > 0 ? (
                 <div className="space-y-3">
                     {applications.map((app) => {
@@ -737,6 +744,7 @@ export default function CertificationProgramApplications({ applications, program
                         const email = isScholarship ? scholarshipApp.email : (regularApp.user?.email ?? regularApp.email ?? '-');
                         const phone = isScholarship ? scholarshipApp.phone : (regularApp.user?.phone_number ?? regularApp.phone ?? '-');
                         const statusInfo = statusMap[app.status] ?? { label: app.status, color: 'bg-gray-200 text-gray-800' };
+                        const inBrevet = brevetLinked ? brevetByEmail.get(String(email).toLowerCase()) : undefined;
 
                         // Count uploaded docs for scholarship
                         const docCount = isScholarship
@@ -764,6 +772,16 @@ export default function CertificationProgramApplications({ applications, program
                                         {app.invoice_code && (
                                             <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary font-mono">
                                                 {app.invoice_code}
+                                            </span>
+                                        )}
+                                        {inBrevet === true && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                                                ✓ Di kelas brevetlearning
+                                            </span>
+                                        )}
+                                        {inBrevet === false && (
+                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-400">
+                                                Belum di brevetlearning
                                             </span>
                                         )}
                                         {isScholarship && docCount !== null && (
