@@ -23,13 +23,12 @@ import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
-import { format, isWithinInterval, parseISO, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { CalendarIcon, Download, X } from 'lucide-react';
 import { router } from '@inertiajs/react';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { DateRange } from 'react-day-picker';
-import { Earning } from './columns';
 
 interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
@@ -37,28 +36,41 @@ interface DataTableProps<TData, TValue> {
     pagination?: PaginatedData<TData>;
     filters?: {
         search?: string;
+        start_date?: string;
+        end_date?: string;
         per_page?: number;
     };
 }
 
-function exportToExcel(dateRange: DateRange | undefined) {
+function parseDate(value?: string): Date | undefined {
+    if (!value) return undefined;
+    const date = new Date(value + 'T00:00:00');
+    return isNaN(date.getTime()) ? undefined : date;
+}
+
+function exportToExcel(filters: DataTableProps<unknown, unknown>['filters']) {
+    // Gunakan filter yang sama dengan yang diterapkan di tabel (server-side / URL)
     const params = new URLSearchParams();
-    if (dateRange?.from) {
-        params.set('start_date', format(dateRange.from, 'yyyy-MM-dd'));
-        params.set('end_date', format(dateRange.to ?? dateRange.from, 'yyyy-MM-dd'));
+    if (filters?.start_date && filters?.end_date) {
+        params.set('start_date', filters.start_date);
+        params.set('end_date', filters.end_date);
     }
+    if (filters?.search) params.set('search', filters.search);
     const query = params.toString() ? `?${params.toString()}` : '';
     window.location.href = route('earnings.export') + query;
 }
 
 export function DataTable<TData, TValue>({ columns, data, pagination, filters }: DataTableProps<TData, TValue>) {
     const paginationObj = pagination || (data && typeof data === 'object' && !Array.isArray(data) && 'data' in data ? (data as unknown as PaginatedData<TData>) : undefined);
-    const rawData = paginationObj ? (paginationObj.data || []) : (Array.isArray(data) ? data : []);
+    const tableData = paginationObj ? (paginationObj.data || []) : (Array.isArray(data) ? data : []);
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([]);
     const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
     const [rowSelection, setRowSelection] = React.useState({});
-    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(undefined);
+    const [dateRange, setDateRange] = React.useState<DateRange | undefined>(() => {
+        const from = parseDate(filters?.start_date);
+        return from ? { from, to: parseDate(filters?.end_date) ?? from } : undefined;
+    });
     const [isCalendarOpen, setIsCalendarOpen] = React.useState(false);
 
     // Server-side search state
@@ -89,18 +101,35 @@ export function DataTable<TData, TValue>({ columns, data, pagination, filters }:
         setSearchValue(filters?.search ?? '');
     }, [filters?.search]);
 
-    const filteredData = React.useMemo(() => {
-        if (!dateRange?.from) return rawData;
-        return (rawData as Earning[]).filter((item) => {
-            const date = parseISO(item.created_at);
-            const from = startOfDay(dateRange.from!);
-            const to = endOfDay(dateRange.to ?? dateRange.from!);
-            return isWithinInterval(date, { start: from, end: to });
-        }) as TData[];
-    }, [rawData, dateRange]);
+    // Sync dateRange saat filter dari server berubah (mis. navigasi back)
+    useEffect(() => {
+        const from = parseDate(filters?.start_date);
+        setDateRange(from ? { from, to: parseDate(filters?.end_date) ?? from } : undefined);
+    }, [filters?.start_date, filters?.end_date]);
+
+    // Terapkan filter tanggal ke server agar berlaku untuk semua data, bukan hanya halaman aktif
+    const applyDateRange = useCallback((range: DateRange | undefined) => {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (range?.from) {
+            searchParams.set('start_date', format(range.from, 'yyyy-MM-dd'));
+            searchParams.set('end_date', format(range.to ?? range.from, 'yyyy-MM-dd'));
+        } else {
+            searchParams.delete('start_date');
+            searchParams.delete('end_date');
+        }
+        searchParams.set('page', '1');
+        router.get(
+            `${window.location.pathname}?${searchParams.toString()}`,
+            {},
+            { preserveState: true, preserveScroll: true, replace: true },
+        );
+    }, []);
+
+    const totalRows = paginationObj ? paginationObj.total : tableData.length;
+    const hasDateFilter = !!(filters?.start_date && filters?.end_date);
 
     const table = useReactTable({
-        data: filteredData,
+        data: tableData,
         columns,
         onSortingChange: setSorting,
         getCoreRowModel: getCoreRowModel(),
@@ -157,6 +186,7 @@ export function DataTable<TData, TValue>({ columns, data, pagination, filters }:
                                     setDateRange(range);
                                     if (range?.from && range?.to) {
                                         setIsCalendarOpen(false);
+                                        applyDateRange(range);
                                     }
                                 }}
                                 numberOfMonths={2}
@@ -169,7 +199,10 @@ export function DataTable<TData, TValue>({ columns, data, pagination, filters }:
                         <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => setDateRange(undefined)}
+                            onClick={() => {
+                                setDateRange(undefined);
+                                applyDateRange(undefined);
+                            }}
                             className="text-muted-foreground hover:text-foreground"
                             title="Reset filter tanggal"
                         >
@@ -183,13 +216,13 @@ export function DataTable<TData, TValue>({ columns, data, pagination, filters }:
                     <Button
                         variant="outline"
                         className="gap-2"
-                        onClick={() => exportToExcel(dateRange)}
+                        onClick={() => exportToExcel(filters)}
                     >
                         <Download className="size-4" />
                         Export Excel
-                        {dateRange?.from && (
+                        {hasDateFilter && (
                             <span className="text-muted-foreground text-xs">
-                                ({filteredData.length} baris)
+                                ({totalRows} baris)
                             </span>
                         )}
                     </Button>
@@ -198,11 +231,11 @@ export function DataTable<TData, TValue>({ columns, data, pagination, filters }:
             </div>
 
             {/* Info filter aktif */}
-            {dateRange?.from && (
+            {hasDateFilter && dateRange?.from && (
                 <div className="bg-muted/50 mb-3 flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
                     <CalendarIcon className="text-muted-foreground size-3.5" />
                     <span>
-                        Menampilkan <strong>{filteredData.length}</strong> dari <strong>{paginationObj ? paginationObj.total : rawData.length}</strong> data
+                        Menampilkan <strong>{totalRows}</strong> data
                         {dateRange.from && (
                             <>
                                 {' '}untuk periode{' '}

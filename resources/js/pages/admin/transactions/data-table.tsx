@@ -277,15 +277,11 @@ export function DataTable<TData, TValue>({ columns, data, pagination, filters }:
         if (startDate) params.append('start_date', format(startDate, 'yyyy-MM-dd'));
         if (endDate) params.append('end_date', format(endDate, 'yyyy-MM-dd'));
 
-        // Column filters
-        const statusFilter = table.getColumn('status')?.getFilterValue();
-        if (statusFilter) params.append('status', String(statusFilter));
-
-        const paymentTypeFilter = table.getColumn('payment_type')?.getFilterValue();
-        if (paymentTypeFilter) params.append('payment_type', String(paymentTypeFilter));
-
-        const productTypeFilter = table.getColumn('product_type')?.getFilterValue();
-        if (productTypeFilter) params.append('product_type', String(productTypeFilter));
+        // Server-side filters (sama dengan yang diterapkan di tabel / URL)
+        if (selectedStatuses.length > 0) params.append('status', selectedStatuses.join(','));
+        if (selectedPaymentTypes.length > 0) params.append('payment_type', selectedPaymentTypes.join(','));
+        if (selectedProductTypes.length > 0) params.append('product_type', selectedProductTypes.join(','));
+        if (filters?.search) params.append('search', filters.search);
 
         // Download
         window.location.href = route('transactions.export') + '?' + params.toString();

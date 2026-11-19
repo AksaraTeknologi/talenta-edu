@@ -94,6 +94,7 @@ class AffiliateEarningController extends Controller
         $filters = [
             'start_date' => $request->input('start_date'),
             'end_date'   => $request->input('end_date'),
+            'search'     => $request->input('search'),
         ];
 
         $startLabel = $filters['start_date'] ? \Carbon\Carbon::parse($filters['start_date'])->format('dmY') : 'all';

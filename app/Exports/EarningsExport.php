@@ -18,6 +18,7 @@ class EarningsExport implements FromQuery, WithHeadings, WithMapping, WithColumn
 {
     protected $startDate;
     protected $endDate;
+    protected $search;
     protected $userId;
     protected $isAdmin;
     protected $isStaff;
@@ -26,6 +27,7 @@ class EarningsExport implements FromQuery, WithHeadings, WithMapping, WithColumn
     {
         $this->startDate = $filters['start_date'] ?? null;
         $this->endDate   = $filters['end_date'] ?? null;
+        $this->search    = $filters['search'] ?? null;
         $this->userId    = $userId;
         $this->isAdmin   = $isAdmin;
         $this->isStaff   = $isStaff;
@@ -40,11 +42,30 @@ class EarningsExport implements FromQuery, WithHeadings, WithMapping, WithColumn
             'invoice.webinarItems.webinar',
             'invoice.bundleEnrollments.bundle',
             'invoice.certificationProgramItems.certificationProgram',
+            'invoice.parentInvoice.courseItems.course',
+            'invoice.parentInvoice.bootcampItems.bootcamp',
+            'invoice.parentInvoice.webinarItems.webinar',
+            'invoice.parentInvoice.bundleEnrollments.bundle',
+            'invoice.parentInvoice.certificationProgramItems.certificationProgram',
         ]);
 
         // Non-admin hanya bisa export data miliknya sendiri (kecuali staff yang melihat data global)
         if (!$this->isAdmin && !$this->isStaff) {
             $query->where('affiliate_user_id', $this->userId);
+        }
+
+        // Filter pencarian (sama dengan halaman Pendapatan)
+        if ($this->search) {
+            $search = $this->search;
+            $query->where(function ($q) use ($search) {
+                $q->whereHas('invoice', function ($iq) use ($search) {
+                    $iq->where('invoice_code', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%"));
+                })->orWhereHas('affiliate', function ($aq) use ($search) {
+                    $aq->where('name', 'like', "%{$search}%")
+                        ->orWhere('affiliate_code', 'like', "%{$search}%");
+                });
+            });
         }
 
         // Filter tanggal
@@ -92,21 +113,24 @@ class EarningsExport implements FromQuery, WithHeadings, WithMapping, WithColumn
 
         $invoice = $earning->invoice;
 
+        // Invoice termin cicilan tidak punya item produk sendiri, ambil dari parent invoice
+        $productSource = $invoice->parentInvoice ?? $invoice;
+
         $names = [];
 
-        foreach ($invoice->courseItems ?? [] as $item) {
+        foreach ($productSource->courseItems ?? [] as $item) {
             $names[] = $item->course->title ?? '-';
         }
-        foreach ($invoice->bootcampItems ?? [] as $item) {
+        foreach ($productSource->bootcampItems ?? [] as $item) {
             $names[] = $item->bootcamp->title ?? '-';
         }
-        foreach ($invoice->webinarItems ?? [] as $item) {
+        foreach ($productSource->webinarItems ?? [] as $item) {
             $names[] = $item->webinar->title ?? '-';
         }
-        foreach ($invoice->bundleEnrollments ?? [] as $item) {
+        foreach ($productSource->bundleEnrollments ?? [] as $item) {
             $names[] = $item->bundle->title ?? '-';
         }
-        foreach ($invoice->certificationProgramItems ?? [] as $item) {
+        foreach ($productSource->certificationProgramItems ?? [] as $item) {
             $names[] = $item->certificationProgram->title ?? '-';
         }
 
