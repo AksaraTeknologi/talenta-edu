@@ -1,3 +1,4 @@
+import { countTransactions } from '@/lib/transaction-count';
 import { transactionColumns, type Invoice } from './columns-transactions';
 import { DataTable } from './data-table-transactions';
 
@@ -13,7 +14,7 @@ export default function BootcampTransaction({ transactions, bootcampId }: Bootca
                 <h2 className="text-lg font-medium">Data Transaksi Pembayaran</h2>
                 {transactions.length > 0 && (
                     <div className="text-muted-foreground text-sm">
-                        Total Transaksi: <span className="text-foreground font-semibold">{transactions.length}</span>
+                        Total Transaksi: <span className="text-foreground font-semibold">{countTransactions(transactions)}</span>
                     </div>
                 )}
             </div>

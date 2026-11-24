@@ -1,3 +1,4 @@
+import { countTransactions } from '@/lib/transaction-count';
 import { columns, type Invoice } from './columns-transactions';
 import { DataTable } from './data-table-transactions';
 
@@ -10,7 +11,7 @@ export default function WebinarTransaction({ transactions, webinarId }: { transa
                 <h2 className="text-lg font-medium">Transaksi & Peserta</h2>
                 {transactions.length > 0 && (
                     <div className="text-muted-foreground text-sm">
-                        Total Transaksi: <span className="text-foreground font-semibold">{transactions.length}</span>
+                        Total Transaksi: <span className="text-foreground font-semibold">{countTransactions(transactions)}</span>
                     </div>
                 )}
             </div>
