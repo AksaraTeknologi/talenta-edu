@@ -1,3 +1,4 @@
+import { countPaidTransactions, countTransactions } from '@/lib/transaction-count';
 import DeleteConfirmDialog from '@/components/delete-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -127,7 +128,7 @@ export default function ShowCertificationProgram({ program, applications, transa
             !!(a as any).has_paid ||
             !!(a as any).installment_status,
     );
-    const paidTransactionsCount = transactions.filter((t) => t.status === 'paid').length;
+    const paidTransactionsCount = countPaidTransactions(transactions);
 
     const totalSchedules = (program.schedules?.length ?? 0) + (program.type === 'scholarship' ? (program.socializationSchedules?.length ?? 0) : 0);
     const uploadedRecordings = (program.schedules?.filter((s) => s.recording_url).length ?? 0) + (program.type === 'scholarship' ? (program.socializationSchedules?.filter((s) => s.recording_url).length ?? 0) : 0);
@@ -162,7 +163,7 @@ export default function ShowCertificationProgram({ program, applications, transa
                                             Transaksi
                                             {transactions.length > 0 && (
                                                 <span className="bg-primary/10 ml-1 rounded-full px-2 py-0.5 text-xs">
-                                                    {paidTransactionsCount}/{transactions.length}
+                                                    {paidTransactionsCount}/{countTransactions(transactions)}
                                                 </span>
                                             )}
                                         </TabsTrigger>

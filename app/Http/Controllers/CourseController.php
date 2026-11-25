@@ -296,8 +296,69 @@ class CourseController extends Controller
 
         $certificate = Certificate::where('course_id', $id)->first();
 
+        // Peserta: invoice lunas, atau cicilan yang DP (termin ke-1) sudah dibayar
+        $participants = Invoice::with([
+            'user',
+            'installmentTerms',
+            'courseItems' => function ($query) use ($id) {
+                $query->where('course_id', $id);
+            },
+        ])
+            ->where(function ($q) {
+                $q->whereIn('status', ['paid', 'completed'])
+                    ->orWhere(function ($sq) {
+                        $sq->where('status', 'installment_pending')
+                            ->whereHas('installmentTerms', function ($tq) {
+                                $tq->where('installment_number', 1)->where('status', 'paid');
+                            });
+                    });
+            })
+            ->whereNull('parent_invoice_id')
+            ->whereHas('courseItems', function ($query) use ($id) {
+                $query->where('course_id', $id);
+            })
+            ->latest()
+            ->get()
+            ->filter(fn($invoice) => $invoice->user && $invoice->courseItems->isNotEmpty())
+            ->map(function ($invoice) {
+                $courseItem = $invoice->courseItems->first();
+                $terms = $invoice->installmentTerms;
+                $isInstallment = (bool) $invoice->is_installment;
+                $paidTerms = $isInstallment ? $terms->where('status', 'paid')->count() : 0;
+                $totalTerms = $isInstallment ? $terms->count() : 0;
+                $isFullyPaid = in_array($invoice->status, ['paid', 'completed']);
+
+                return [
+                    'id' => $invoice->id,
+                    'invoice_code' => $invoice->invoice_code,
+                    'user' => [
+                        'id' => $invoice->user->id,
+                        'name' => $invoice->user->name,
+                        'email' => $invoice->user->email,
+                        'phone_number' => $invoice->user->phone_number,
+                    ],
+                    'course_item' => [
+                        'id' => $courseItem->id,
+                        'progress' => (int) ($courseItem->progress ?? 0),
+                        'completed_at' => $courseItem->completed_at,
+                    ],
+                    'payment' => [
+                        'is_installment' => $isInstallment,
+                        'is_fully_paid' => $isFullyPaid,
+                        'paid_terms' => $paidTerms,
+                        'total_terms' => $totalTerms,
+                        'access_suspended_at' => $invoice->access_suspended_at,
+                    ],
+                    'enrolled_at' => $invoice->paid_at
+                        ?? $terms->firstWhere('installment_number', 1)?->paid_at
+                        ?? $invoice->created_at,
+                ];
+            })
+            ->values();
+
         return Inertia::render('admin/courses/show', [
             'course' => $course,
+            'participants' => $participants,
             'transactions' => $transactions,
             'ratings' => $ratings,
             'certificate' => $certificate

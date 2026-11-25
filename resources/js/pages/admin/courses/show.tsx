@@ -1,3 +1,4 @@
+import { countTransactions } from '@/lib/transaction-count';
 import DeleteConfirmDialog from '@/components/delete-dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -12,7 +13,9 @@ import { useEffect } from 'react';
 import { toast } from 'sonner';
 import { CourseRating } from './columns-ratings';
 import { Invoice } from './columns-transactions';
+import { Participant } from './columns-participants';
 import CourseDetail from './show-details';
+import CourseParticipant from './show-participants';
 import ShowModules from './show-modules';
 import CourseRatingComponent from './show-ratings';
 import CourseTransaction from './show-transactions';
@@ -66,6 +69,7 @@ interface Certificate {
 
 interface CourseProps {
     course: Course;
+    participants: Participant[];
     transactions: Invoice[];
     ratings: CourseRating[];
     certificate?: Certificate | null;
@@ -75,7 +79,7 @@ interface CourseProps {
     };
 }
 
-export default function ShowCourse({ course, transactions, ratings, certificate, flash }: CourseProps) {
+export default function ShowCourse({ course, participants = [], transactions, ratings, certificate, flash }: CourseProps) {
     const { auth } = usePage<SharedData>().props;
     const { canManage } = usePermission();
     const role = auth.role[0];
@@ -151,10 +155,18 @@ export default function ShowCourse({ course, transactions, ratings, certificate,
                         <TabsList>
                             <TabsTrigger value="detail">Detail</TabsTrigger>
                             {!isAffiliate && (
+                                <TabsTrigger value="peserta">
+                                    Peserta
+                                    {participants.length > 0 && (
+                                        <span className="bg-primary/10 ml-1 rounded-full px-2 py-0.5 text-xs">{participants.length}</span>
+                                    )}
+                                </TabsTrigger>
+                            )}
+                            {!isAffiliate && (
                                 <TabsTrigger value="transaksi">
                                     Transaksi
                                     {transactions.length > 0 && (
-                                        <span className="bg-primary/10 ml-1 rounded-full px-2 py-0.5 text-xs">{transactions.length}</span>
+                                        <span className="bg-primary/10 ml-1 rounded-full px-2 py-0.5 text-xs">{countTransactions(transactions)}</span>
                                     )}
                                 </TabsTrigger>
                             )}
@@ -185,6 +197,11 @@ export default function ShowCourse({ course, transactions, ratings, certificate,
                             )}
                             <ShowModules modules={course.modules} courseId={course.id} />
                         </TabsContent>
+                        {!isAffiliate && (
+                            <TabsContent value="peserta">
+                                <CourseParticipant participants={participants} />
+                            </TabsContent>
+                        )}
                         <TabsContent value="transaksi">
                             <CourseTransaction transactions={transactions} courseId={course.id} />
                         </TabsContent>
