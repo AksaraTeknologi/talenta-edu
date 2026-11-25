@@ -22,13 +22,9 @@ class InvoiceApiController extends Controller
         ]);
 
         $query = Invoice::where(function ($q) {
-            $q->whereHas('user', function ($sq) {
-                $sq->role('user');
-            })->orWhereHas('parentInvoice.user', function ($sq) {
-                $sq->role('user');
-            });
+            $q->where('amount', '>', 0)
+                ->orWhere('nett_amount', '>', 0);
         })
-            ->where('amount', '>', 0)
             ->where(function ($q) {
                 $q->where(function ($sq) {
                     $sq->whereNull('parent_invoice_id')->where('is_installment', false);
@@ -199,24 +195,20 @@ class InvoiceApiController extends Controller
      */
     public function show(string $id)
     {
-        $invoice = Invoice::whereHas('user', function ($q) {
-            $q->role('user');
-        })
-            ->where('amount', '>', 0)
-            ->with([
-                'user:id,name,email,phone_number,avatar',
-                'courseItems.course:id,title,slug,price,thumbnail',
-                'bootcampItems.bootcamp:id,title,slug,price,thumbnail',
-                'webinarItems.webinar:id,title,slug,price,thumbnail',
-                'bundleEnrollments.bundle:id,title,slug,price,thumbnail',
-                'certificationProgramItems.certificationProgram:id,title,slug,price,thumbnail',
-                'parentInvoice.user:id,name,email,phone_number,avatar',
-                'parentInvoice.courseItems.course:id,title,slug,price,thumbnail',
-                'parentInvoice.bootcampItems.bootcamp:id,title,slug,price,thumbnail',
-                'parentInvoice.webinarItems.webinar:id,title,slug,price,thumbnail',
-                'parentInvoice.bundleEnrollments.bundle:id,title,slug,price,thumbnail',
-                'parentInvoice.certificationProgramItems.certificationProgram:id,title,slug,price,thumbnail',
-            ])->find($id);
+        $invoice = Invoice::with([
+            'user:id,name,email,phone_number,avatar',
+            'courseItems.course:id,title,slug,price,thumbnail',
+            'bootcampItems.bootcamp:id,title,slug,price,thumbnail',
+            'webinarItems.webinar:id,title,slug,price,thumbnail',
+            'bundleEnrollments.bundle:id,title,slug,price,thumbnail',
+            'certificationProgramItems.certificationProgram:id,title,slug,price,thumbnail',
+            'parentInvoice.user:id,name,email,phone_number,avatar',
+            'parentInvoice.courseItems.course:id,title,slug,price,thumbnail',
+            'parentInvoice.bootcampItems.bootcamp:id,title,slug,price,thumbnail',
+            'parentInvoice.webinarItems.webinar:id,title,slug,price,thumbnail',
+            'parentInvoice.bundleEnrollments.bundle:id,title,slug,price,thumbnail',
+            'parentInvoice.certificationProgramItems.certificationProgram:id,title,slug,price,thumbnail',
+        ])->find($id);
 
         if (!$invoice) {
             return response()->json([
@@ -245,18 +237,10 @@ class InvoiceApiController extends Controller
         ]);
 
         $invoices = Invoice::where(function ($q) {
-            $q->whereHas('user', function ($sq) {
-                $sq->role('user');
-            })->orWhereHas('parentInvoice.user', function ($sq) {
-                $sq->role('user');
-            });
+            $q->where(function ($sq) {
+                $sq->whereNull('parent_invoice_id')->where('is_installment', false);
+            })->orWhereNotNull('parent_invoice_id');
         })
-            ->where('amount', '>', 0)
-            ->where(function ($q) {
-                $q->where(function ($sq) {
-                    $sq->whereNull('parent_invoice_id')->where('is_installment', false);
-                })->orWhereNotNull('parent_invoice_id');
-            })
             ->when(!empty($validated['status']), function ($query) use ($validated) {
                 $query->where('status', $validated['status']);
             })
