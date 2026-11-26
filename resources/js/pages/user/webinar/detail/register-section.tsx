@@ -8,7 +8,6 @@ import { BadgeCheck, CalendarDays, Clock, Hourglass, MapPin, Star, Users } from 
 import { useTranslation } from 'react-i18next';
 
 interface Webinar {
-    slug?: string;
     title: string;
     batch?: string | null;
     strikethrough_price: number;
@@ -17,7 +16,7 @@ interface Webinar {
     description?: string | null;
     start_time: string;
     end_time: string;
-    registration_deadline?: string | null;
+    registration_deadline: string;
     registration_url: string;
     thumbnail?: string | null;
     user?: {
@@ -36,12 +35,16 @@ export default function RegisterSection({ webinar }: { webinar: Webinar }) {
     const isLoggedIn = !!auth.user;
     const isProfileComplete = isLoggedIn && auth.user?.phone_number;
 
-    const registrationUrl = webinar.slug ? `/webinar/${webinar.slug}/register` : webinar.registration_url;
-    const buttonText = t('webinar.detail.btnJoinNow', 'Gabung Sekarang');
-    const warningMessage: string | null = null;
+    let registrationUrl: string;
+    let buttonText: string;
+    let warningMessage: string | null = null;
 
-    const deadline = webinar.registration_deadline ? new Date(webinar.registration_deadline) : null;
-    const isRegistrationOpen = deadline ? new Date() < deadline : true;
+    registrationUrl = webinar.registration_url;
+    buttonText = t('webinar.detail.btnJoinNow', 'Gabung Sekarang');
+    warningMessage = null;
+
+    const deadline = new Date(webinar.registration_deadline);
+    const isRegistrationOpen = new Date() < deadline;
 
     const getInitials = (name: string) => {
         return name
@@ -198,21 +201,19 @@ export default function RegisterSection({ webinar }: { webinar: Webinar }) {
 
                         <Separator className="my-4 sm:my-6" />
 
-                        {webinar.registration_deadline && (
-                            <div className="space-y-1 sm:space-y-2">
-                                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    {t('webinar.detail.lastRegistrationLabel', 'Terakhir pendaftaran:')}
-                                </p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                    {new Date(webinar.registration_deadline).toLocaleDateString(locale, {
-                                        weekday: 'long',
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })}
-                                </p>
-                            </div>
-                        )}
+                        <div className="space-y-1 sm:space-y-2">
+                            <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {t('webinar.detail.lastRegistrationLabel', 'Terakhir pendaftaran:')}
+                            </p>
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                {new Date(webinar.registration_deadline).toLocaleDateString(locale, {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric',
+                                })}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Speaker Section for Mobile - Shown only on mobile */}

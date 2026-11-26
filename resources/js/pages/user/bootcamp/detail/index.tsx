@@ -16,7 +16,6 @@ interface Mentor {
 
 interface Bootcamp {
     id: string;
-    slug?: string;
     title: string;
     category?: { name: string };
     category_id?: string;

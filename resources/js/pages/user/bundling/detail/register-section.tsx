@@ -53,10 +53,14 @@ export default function RegisterSection({
     const isLoggedIn = !!auth.user;
     const isProfileComplete = isLoggedIn && auth.user?.phone_number;
 
-    const registrationUrl = bundle.slug ? `/bundle/${bundle.slug}/checkout` : bundle.registration_url;
-    const buttonText = t('bundling.detail.register.btnRegisterNow', 'Daftar Sekarang');
-    const warningMessage: string | null = null;
-    const isDisabled = false;
+    let registrationUrl: string;
+    let buttonText: string;
+    let warningMessage: string | null = null;
+    let isDisabled = false;
+
+    registrationUrl = bundle.registration_url;
+    buttonText = t('bundling.detail.register.btnRegisterNow', 'Daftar Sekarang');
+    warningMessage = null;
 
     return (
         <section className="relative mx-auto mt-16 w-full max-w-6xl overflow-hidden px-4 pb-16" id="register">

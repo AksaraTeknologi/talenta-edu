@@ -1,10 +1,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Link } from '@inertiajs/react';
+import { SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
 import { format } from 'date-fns';
 import { id, enUS } from 'date-fns/locale';
-import { BadgeCheck, CalendarDays, Clock, GraduationCap, MapPin, Users } from 'lucide-react';
+import { BadgeCheck, Calendar, CalendarDays, Clock, GraduationCap, MapPin, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Mentor {
@@ -52,9 +53,7 @@ export default function RegisterSection({ program, isEnrolled, scholarshipApplic
     const { t, i18n } = useTranslation('user');
     const dateLocale = i18n.language === 'en' ? enUS : id;
     const atWord = i18n.language === 'en' ? 'at' : 'pukul';
-
-    const regularRegisterUrl = `/certification-program/${program.slug}/register`;
-    const scholarshipRegisterUrl = `/certification-program/${program.slug}/register?scholarship=1`;
+    const { auth } = usePage<SharedData>().props;
 
     // Regular program deadline
     const regularDeadline = program.registration_deadline ? new Date(program.registration_deadline) : null;
@@ -167,31 +166,39 @@ export default function RegisterSection({ program, isEnrolled, scholarshipApplic
                                 </div>
                             )}
 
-                            {!isEnrolled && program.type === 'scholarship' && !isScholarshipApproved ? (
-                                canRegisterScholarship ? (
-                                    <Button asChild className="w-full rounded-lg text-sm sm:text-base py-5 sm:py-6">
-                                        <Link href={scholarshipRegisterUrl}>
-                                            <GraduationCap className="mr-2 h-5 w-5" />
-                                            {t('certificationProgram.detail.register.btnApplyScholarship', 'Ajukan Beasiswa')}
-                                        </Link>
-                                    </Button>
-                                ) : (
-                                    <Button disabled className="w-full rounded-lg text-sm sm:text-base py-5 sm:py-6">
-                                        <GraduationCap className="mr-2 h-5 w-5" />
-                                        {t('certificationProgram.detail.register.btnScholarshipClosed', 'Pendaftaran Beasiswa Ditutup')}
-                                    </Button>
-                                )
-                            ) : canRegisterRegular ? (
-                                <Button asChild className="w-full rounded-lg text-sm sm:text-base py-5 sm:py-6">
-                                    <Link href={regularRegisterUrl}>
-                                        {t('certificationProgram.detail.register.btnRegisterRegular', 'Daftar Program Reguler')}
-                                    </Link>
-                                </Button>
+                            {auth ? (
+                                <>
+                                    {!isEnrolled && program.type === 'scholarship' && !isScholarshipApproved ? null : (
+                                        <Button asChild className="w-full rounded-lg text-sm sm:text-base py-5 sm:py-6" disabled={!canRegisterRegular}>
+                                            <Link href={route('certification-programs.register', program.slug)}>
+                                                {isEnrolled
+                                                    ? t('certificationProgram.detail.register.btnEnrolled', '✓ Sudah Terdaftar')
+                                                    : canRegisterRegular
+                                                    ? t('certificationProgram.detail.register.btnRegisterRegular', 'Daftar Program Reguler')
+                                                    : t('certificationProgram.detail.register.btnRegularClosed', 'Pendaftaran Reguler Ditutup')}
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {program.type === 'scholarship' && !isScholarshipApproved && (
+                                        <Button
+                                            asChild
+                                            disabled={!canRegisterScholarship}
+                                            className={`w-full rounded-lg text-sm sm:text-base py-5 sm:py-6 ${!canRegisterScholarship ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        >
+                                            <Link href={canRegisterScholarship ? route('certification-programs.register', { program: program.slug, scholarship: 1 }) : '#'}>
+                                                <GraduationCap className="mr-2 h-5 w-5" />
+                                                {canRegisterScholarship 
+                                                    ? t('certificationProgram.detail.register.btnApplyScholarship', 'Ajukan Beasiswa')
+                                                    : t('certificationProgram.detail.register.btnScholarshipClosed', 'Pendaftaran Beasiswa Ditutup')}
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </>
                             ) : (
-                                <Button disabled className="w-full rounded-lg text-sm sm:text-base py-5 sm:py-6">
-                                    {isEnrolled
-                                        ? t('certificationProgram.detail.register.btnEnrolled', '✓ Sudah Terdaftar')
-                                        : t('certificationProgram.detail.register.btnRegularClosed', 'Pendaftaran Reguler Ditutup')}
+                                <Button asChild className="w-full rounded-lg text-sm sm:text-base py-5 sm:py-6">
+                                    <Link href={route('certification-programs.register', program.slug)}>
+                                        {t('certificationProgram.detail.register.btnRegisterNow', 'Daftar Sekarang')}
+                                    </Link>
                                 </Button>
                             )}
                         </div>

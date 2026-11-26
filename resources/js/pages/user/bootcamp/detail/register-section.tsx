@@ -8,7 +8,6 @@ import { BadgeCheck, CalendarDays, ChartArea, Clock, Hourglass, MapPin, Users } 
 import { useTranslation } from 'react-i18next';
 
 interface Bootcamp {
-    slug?: string;
     title: string;
     batch?: string | null;
     strikethrough_price: number;
@@ -18,7 +17,7 @@ interface Bootcamp {
     start_date: string;
     end_date: string;
     schedules?: { schedule_date: string; day: string; start_time: string; end_time: string }[];
-    registration_deadline?: string | null;
+    registration_deadline: string;
     registration_url: string;
     thumbnail?: string | null;
 }
@@ -36,12 +35,16 @@ export default function RegisterSection({ bootcamp }: { bootcamp: Bootcamp }) {
     const isLoggedIn = !!auth.user;
     const isProfileComplete = isLoggedIn && auth.user?.phone_number;
 
-    const registrationUrl = bootcamp.slug ? `/bootcamp/${bootcamp.slug}/register` : bootcamp.registration_url;
-    const buttonText = t('bootcamp.detail.btnRegisterNow', 'Daftar Sekarang');
-    const warningMessage: string | null = null;
+    let registrationUrl: string;
+    let buttonText: string;
+    let warningMessage: string | null = null;
 
-    const deadline = bootcamp.registration_deadline ? new Date(bootcamp.registration_deadline) : null;
-    const isRegistrationOpen = deadline ? new Date() < deadline : true;
+    registrationUrl = bootcamp.registration_url;
+    buttonText = t('bootcamp.detail.btnRegisterNow', 'Daftar Sekarang');
+    warningMessage = null;
+
+    const deadline = new Date(bootcamp.registration_deadline);
+    const isRegistrationOpen = new Date() < deadline;
 
     return (
         <section className="mx-auto mt-4 md:mt-8 mb-8 sm:mb-12 w-full max-w-7xl px-4 sm:px-6 lg:px-8" id="register">
@@ -172,19 +175,17 @@ export default function RegisterSection({ bootcamp }: { bootcamp: Bootcamp }) {
                             </>
                         )}
 
-                        {bootcamp.registration_deadline && (
-                            <div className="space-y-1 sm:space-y-2">
-                                <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{t('bootcamp.detail.deadline', 'Terakhir pendaftaran:')}</p>
-                                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                    {new Date(bootcamp.registration_deadline).toLocaleDateString(locale, {
-                                        weekday: 'long',
-                                        day: 'numeric',
-                                        month: 'long',
-                                        year: 'numeric',
-                                    })}
-                                </p>
-                            </div>
-                        )}
+                        <div className="space-y-1 sm:space-y-2">
+                            <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">{t('bootcamp.detail.deadline', 'Terakhir pendaftaran:')}</p>
+                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                                {new Date(bootcamp.registration_deadline).toLocaleDateString(locale, {
+                                    weekday: 'long',
+                                    day: 'numeric',
+                                    month: 'long',
+                                    year: 'numeric',
+                                })}
+                            </p>
+                        </div>
                     </div>
 
                     {/* Benefits Section for Mobile - Shown only on mobile */}

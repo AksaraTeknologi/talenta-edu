@@ -12,7 +12,6 @@ import VideoSection from './video-section';
 
 interface Course {
     id: string;
-    slug?: string;
     title: string;
     user?: { id: string; name: string; bio: string | null };
     category?: { name: string };

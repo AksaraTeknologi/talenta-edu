@@ -132,19 +132,4 @@ class Webinar extends Model
         ];
     }
 
-    public function getRegistrationUrlAttribute($value): string
-    {
-        if (!empty($this->slug)) {
-            return url('/webinar/' . $this->slug . '/register');
-        }
-        return $value ?? '';
-    }
-
-    public function getWebinarUrlAttribute($value): string
-    {
-        if (!empty($this->slug)) {
-            return url('/webinar/' . $this->slug);
-        }
-        return $value ?? '';
-    }
 }
