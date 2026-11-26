@@ -86,4 +86,12 @@ class CertificationProgram extends Model
     {
         return $this->morphMany(ProductInstallmentTerm::class, 'termable')->orderBy('term_number');
     }
+
+    public function getRegistrationUrlAttribute($value): string
+    {
+        if (!empty($this->slug)) {
+            return url('/certification-program/' . $this->slug . '/register');
+        }
+        return $value ?? '';
+    }
 }

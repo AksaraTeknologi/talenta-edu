@@ -1,9 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { SharedData } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
-import { BadgeCheck, BookOpen, Calendar, ChartBar, Clock, FileText, MessageCircle, Monitor, User } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+import { BadgeCheck, BookOpen, Calendar, ChartBar, FileText, MessageCircle, Monitor, User } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Course {
@@ -31,29 +29,11 @@ interface Course {
 
 export default function RegisterSection({ course }: { course: Course }) {
     const { t, i18n } = useTranslation('user');
-    const { auth } = usePage<SharedData>().props;
     const totalLessons = course.modules?.reduce((total, module) => total + (module.lessons?.length || 0), 0) || 0;
 
-    const isLoggedIn = !!auth.user;
-    const isProfileComplete = isLoggedIn && auth.user?.phone_number;
-
-    let registrationUrl: string;
-    let buttonText: string;
-    let warningMessage: string | null = null;
-
-    if (!isLoggedIn) {
-        registrationUrl = course.slug ? `/course/${course.slug}/checkout` : course.registration_url;
-        buttonText = t('course.detail.btnBuyNow', 'Beli Sekarang');
-        warningMessage = null;
-    } else if (!isProfileComplete) {
-        registrationUrl = route('profile.edit', { redirect: window.location.href });
-        buttonText = t('course.detail.btnCompleteProfile', 'Lengkapi Profil untuk Mendaftar');
-        warningMessage = t('course.detail.warningProfile', 'Profil Anda belum lengkap!');
-    } else {
-        registrationUrl = course.slug ? `/course/${course.slug}/checkout` : course.registration_url;
-        buttonText = t('course.detail.btnBuyNow', 'Beli Sekarang');
-        warningMessage = null;
-    }
+    const registrationUrl = course.slug ? `/course/${course.slug}/checkout` : course.registration_url;
+    const buttonText = t('course.detail.btnBuyNow', 'Beli Sekarang');
+    const warningMessage: string | null = null;
 
     return (
         <section className="mx-auto mt-4 md:mt-8 mb-8 sm:mb-12 w-full max-w-7xl px-4 sm:px-6 lg:px-8" id="register">

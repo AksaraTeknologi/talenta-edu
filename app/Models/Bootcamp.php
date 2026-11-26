@@ -136,4 +136,19 @@ class Bootcamp extends Model
         ];
     }
 
+    public function getRegistrationUrlAttribute($value): string
+    {
+        if (!empty($this->slug)) {
+            return url('/bootcamp/' . $this->slug . '/register');
+        }
+        return $value ?? '';
+    }
+
+    public function getBootcampUrlAttribute($value): string
+    {
+        if (!empty($this->slug)) {
+            return url('/bootcamp/' . $this->slug);
+        }
+        return $value ?? '';
+    }
 }

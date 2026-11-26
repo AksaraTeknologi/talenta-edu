@@ -12,6 +12,7 @@ import ToolsSection from './tools-section';
 
 interface Webinar {
     id: string;
+    slug?: string;
     title: string;
     category?: { name: string };
     category_id?: string;
