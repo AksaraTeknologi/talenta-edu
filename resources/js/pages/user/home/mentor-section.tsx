@@ -1,3 +1,7 @@
+import { EASE_OUT_EXPO, Reveal, VIEWPORT_ONCE } from '@/components/home-motion';
+import { Link } from '@inertiajs/react';
+import { ArrowRight } from 'lucide-react';
+import { motion, useReducedMotion } from 'motion/react';
 import { useTranslation } from 'react-i18next';
 
 interface Mentor {
@@ -74,20 +78,46 @@ const MentorCard = ({ mentor }: { mentor: Mentor }) => {
 
 export default function MentorSection() {
     const { t } = useTranslation('home');
+    const prefersReducedMotion = useReducedMotion();
 
     return (
-        <section className="relative w-full bg-secondary px-4 py-10 sm:px-8 sm:py-16 md:px-16">
-            <div className="mx-auto w-full max-w-7xl">
+        <section className="w-full border-b border-[#DCE3EC] bg-[#F2F6FA] py-14 sm:py-20">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="mb-10 text-center sm:mb-16">
-                    <h2 className="text-3xl font-bold font-literata text-primary sm:text-5xl">
-                        {t('mentor.title', 'Meet Our Mentor')}
-                    </h2>
-                </div>
+                <Reveal y={22}>
+                    <div className="mb-8 flex flex-col justify-between gap-4 sm:mb-10 sm:flex-row sm:items-end">
+                        <div>
+                            <h2 className="font-literata text-2xl font-bold text-[#12344E] sm:text-3xl">
+                                {t('mentor.title', 'Belajar Bersama Mentor Praktisi')}
+                            </h2>
+                            <p className="mt-2 max-w-2xl text-sm text-[#475569] sm:text-base">
+                                {t('mentor.subtitle', 'Dibimbing langsung oleh praktisi, akademisi, dan konsultan pajak berpengalaman.')}
+                            </p>
+                        </div>
+                        <Link
+                            href="/mentor"
+                            className="inline-flex min-h-10 items-center gap-1.5 text-sm font-semibold text-[#1976D3] hover:underline"
+                        >
+                            <span>{t('mentor.viewAll', 'Lihat Semua Mentor')}</span>
+                            <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    </div>
+                </Reveal>
+
                 {/* Mentor Cards Grid */}
                 <div className="grid grid-cols-1 gap-8 justify-items-center sm:grid-cols-2 lg:grid-cols-4">
-                    {mentorsData.map((mentor) => (
-                        <MentorCard key={mentor.id} mentor={mentor} />
+                    {mentorsData.map((mentor, idx) => (
+                        <motion.div
+                            key={mentor.id}
+                            initial={prefersReducedMotion ? false : { opacity: 0, y: 34, scale: 0.96 }}
+                            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                            viewport={VIEWPORT_ONCE}
+                            transition={{ duration: 0.6, delay: idx * 0.09, ease: EASE_OUT_EXPO }}
+                            whileHover={prefersReducedMotion ? undefined : { y: -6 }}
+                            className="w-full"
+                        >
+                            <MentorCard mentor={mentor} />
+                        </motion.div>
                     ))}
                 </div>
             </div>

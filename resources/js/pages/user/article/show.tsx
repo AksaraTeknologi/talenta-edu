@@ -1,14 +1,15 @@
+import { Reveal } from '@/components/home-motion';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
 import { useInitials } from '@/hooks/use-initials';
 import UserLayout from '@/layouts/user-layout';
+import { resolveStorageUrl } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
 import { format } from 'date-fns';
-import { id, enUS } from 'date-fns/locale';
-import { BookText, Calendar, Clock, Eye, MonitorPlay, Presentation, Share2 } from 'lucide-react';
-import { motion } from 'motion/react';
+import { enUS, id } from 'date-fns/locale';
+import { ArrowRight, ChevronRight, Clock, Eye, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 
 interface Category {
     id: string;
@@ -53,221 +54,178 @@ interface ArticleShowProps {
 }
 
 export default function ArticleShow({ article, relatedArticles }: ArticleShowProps) {
-    const { t, i18n } = useTranslation('user');
+    const { t, i18n } = useTranslation(['user', 'common']);
     const dateFnsLocale = i18n.language === 'en' ? enUS : id;
+    const numberLocale = i18n.language === 'en' ? 'en-US' : 'id-ID';
     const getInitials = useInitials();
+    const authorName = article.user.name === 'Admin' ? t('article.team') : article.user.name;
+    const thumbnail = resolveStorageUrl(article.thumbnail);
 
     const handleShare = async () => {
         if (navigator.share) {
             try {
-                await navigator.share({
-                    title: article.title,
-                    text: article.excerpt || article.title,
-                    url: window.location.href,
-                });
-            } catch (err) {
-                console.log('Error sharing:', err);
+                await navigator.share({ title: article.title, text: article.excerpt || article.title, url: window.location.href });
+            } catch {
+                // user cancelled the share sheet
             }
-        } else {
-            navigator.clipboard.writeText(window.location.href);
-            alert(t('article.linkCopied'));
+            return;
         }
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success(t('article.linkCopied'));
     };
 
     return (
         <UserLayout>
             <Head title={article.title} />
 
-            {/* Hero Section */}
-            <div className="relative mb-8">
-                {article.thumbnail && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ duration: 0.7 }}
-                        className="relative h-64 md:h-96 w-full overflow-hidden rounded-2xl shadow-lg"
-                    >
-                        <img
-                            src={`/storage/${article.thumbnail}`}
-                            alt={article.title}
-                            className="h-full w-full object-cover object-center"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                        <div className="absolute left-0 bottom-0 p-6 w-full text-white">
-                            <Badge variant="secondary" className="mb-2 bg-primary/80 text-white">
-                                {article.category.name}
-                            </Badge>
-                            <h1 className="mb-2 text-2xl md:text-4xl font-bold drop-shadow">{article.title}</h1>
-                            <div className="flex flex-wrap items-center gap-4 text-xs md:text-sm opacity-90">
-                                <div className="flex items-center gap-2">
-                                    <Avatar className="h-7 w-7 border-2 border-white">
-                                        <AvatarImage src={article.user.avatar} alt={article.user.name} />
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+            {/* Header */}
+            <header className="w-full border-b border-[#E7E2D8] bg-[#FAF8F4]">
+                <div className="mx-auto max-w-5xl px-4 pt-6 pb-8 sm:px-6 sm:pb-10 lg:px-8">
+                    <nav aria-label="Breadcrumb" className="mb-6 flex flex-wrap items-center gap-1.5 text-xs font-medium text-[#5B6B7F] sm:mb-8 sm:text-sm">
+                        <Link href="/" className="hover:text-[#1976D3]">
+                            {t('common:nav.home', 'Beranda')}
+                        </Link>
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                        <Link href="/article" className="hover:text-[#1976D3]">
+                            {t('article.headTitle')}
+                        </Link>
+                        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+                        <span className="line-clamp-1 text-[#162230]">{article.title}</span>
+                    </nav>
+
+                    <Reveal immediate y={14} delay={0.04} duration={0.5}>
+                        <Link
+                            href={`/article?category=${article.category.id}`}
+                            className="text-xs font-semibold tracking-wider text-[#1976D3] uppercase hover:underline sm:text-sm"
+                        >
+                            {article.category.name}
+                        </Link>
+                    </Reveal>
+
+                    <Reveal immediate y={20} delay={0.1} duration={0.6}>
+                        <h1 className="font-literata mt-3 max-w-4xl text-[28px] leading-[1.2] font-bold tracking-tight text-[#12344E] sm:text-4xl lg:text-[44px]">
+                            {article.title}
+                        </h1>
+                    </Reveal>
+
+                    {article.excerpt && (
+                        <Reveal immediate y={16} delay={0.16} duration={0.6}>
+                            <p className="mt-4 max-w-3xl text-base leading-relaxed text-[#475569] sm:text-lg">{article.excerpt}</p>
+                        </Reveal>
+                    )}
+
+                    <Reveal immediate y={14} delay={0.22} duration={0.55}>
+                        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-[#5B6B7F]">
+                                <span className="flex items-center gap-2 font-medium text-[#162230]">
+                                    <Avatar className="h-8 w-8 border border-[#DCE3EC]">
+                                        <AvatarImage src={article.user.avatar} alt={authorName} />
+                                        <AvatarFallback className="bg-[#EAF3FC] text-xs font-semibold text-[#12344E]">
                                             {getInitials(article.user.name)}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <span className="font-medium">{article.user.name}</span>
-                                </div>
-                                <Separator orientation="vertical" className="h-4 bg-white/40" />
-                                <div className="flex items-center gap-1">
-                                    <Calendar className="h-4 w-4" />
-                                    {format(new Date(article.published_at), 'dd MMMM yyyy', { locale: dateFnsLocale })}
-                                </div>
-                                <Separator orientation="vertical" className="h-4 bg-white/40" />
-                                <div className="flex items-center gap-1">
+                                    {authorName}
+                                </span>
+                                <span>{format(new Date(article.published_at), 'dd MMMM yyyy', { locale: dateFnsLocale })}</span>
+                                <span className="flex items-center gap-1">
                                     <Clock className="h-4 w-4" />
                                     {t('article.minRead', { count: article.read_time })}
-                                </div>
-                                <Separator orientation="vertical" className="h-4 bg-white/40" />
-                                <div className="flex items-center gap-1">
+                                </span>
+                                <span className="flex items-center gap-1">
                                     <Eye className="h-4 w-4" />
-                                    {t('article.views', { count: article.views.toLocaleString(i18n.language === 'en' ? 'en-US' : 'id-ID') })}
-                                </div>
+                                    {t('article.views', { count: article.views.toLocaleString(numberLocale) })}
+                                </span>
                             </div>
+                            <Button variant="outline" onClick={handleShare} className="shrink-0 self-start sm:self-auto">
+                                <Share2 className="h-4 w-4" />
+                                {t('article.shareArticle')}
+                            </Button>
                         </div>
-                    </motion.div>
+                    </Reveal>
+                </div>
+            </header>
+
+            <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+                {thumbnail && (
+                    <div className="mb-10 aspect-[16/9] w-full overflow-hidden rounded-xl border border-[#DCE3EC] bg-[#F2F6FA]">
+                        <img src={thumbnail} alt={article.title} className="h-full w-full object-cover" />
+                    </div>
                 )}
-            </div>
 
-            <div className="mx-auto max-w-5xl px-2 md:px-0 grid grid-cols-1 gap-10 lg:grid-cols-3">
-                {/* Main Content */}
-                <div className="lg:col-span-2">
-                    <article>
-                        {/* Excerpt */}
-                        {article.excerpt && (
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ duration: 0.5, delay: 0.1 }}
-                                className="border-primary bg-primary/5 mb-6 rounded-lg border-l-4 p-4"
-                            >
-                                <p className="text-muted-foreground">{article.excerpt}</p>
-                            </motion.div>
-                        )}
+                <div className="grid grid-cols-1 gap-12 lg:grid-cols-[minmax(0,1fr)_280px]">
+                    {/* Body */}
+                    <article className="min-w-0">
+                        <div className="prose prose-lg prose-slate prose-headings:font-literata prose-headings:text-[#12344E] prose-a:text-[#1976D3] prose-img:rounded-xl max-w-none">
+                            {article.content ? <div dangerouslySetInnerHTML={{ __html: article.content }} /> : <p className="text-[#5B6B7F]">{t('article.noContent')}</p>}
+                        </div>
 
-                        {/* Content */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.2 }}
-                            className="prose prose-lg prose-slate dark:prose-invert max-w-none"
-                        >
-                            {article.content ? (
-                                <div dangerouslySetInnerHTML={{ __html: article.content }} />
-                            ) : (
-                                <p className="text-muted-foreground">{t('article.noContent')}</p>
-                            )}
-                        </motion.div>
-
-                        {/* Author Info */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="mt-12 flex items-center gap-4 rounded-xl bg-primary/10 p-6"
-                        >
-                            <Avatar className="h-16 w-16">
-                                <AvatarImage src={article.user.avatar} alt={article.user.name} />
-                                <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                                    {getInitials(article.user.name)}
-                                </AvatarFallback>
+                        {/* Author */}
+                        <div className="mt-12 flex items-start gap-4 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-5 sm:p-6">
+                            <Avatar className="h-14 w-14 shrink-0 border border-[#DCE3EC]">
+                                <AvatarImage src={article.user.avatar} alt={authorName} />
+                                <AvatarFallback className="bg-[#EAF3FC] text-lg font-semibold text-[#12344E]">{getInitials(article.user.name)}</AvatarFallback>
                             </Avatar>
                             <div>
-                                <h3 className="mb-1 font-semibold">{t('article.aboutAuthor')}</h3>
-                                <p className="text-lg font-medium">{article.user.name === 'Admin' ? t('article.team') : article.user.name}</p>
-                                <p className="text-muted-foreground text-sm">{article.user.bio}</p>
+                                <p className="text-xs font-semibold tracking-wider text-[#5B6B7F] uppercase">{t('article.aboutAuthor')}</p>
+                                <p className="mt-1 text-base font-semibold text-[#162230]">{authorName}</p>
+                                {article.user.bio && <p className="mt-1 text-sm leading-relaxed text-[#475569]">{article.user.bio}</p>}
                             </div>
-                        </motion.div>
-                    </article>
-                </div>
-
-                {/* Sidebar */}
-                <div className="lg:col-span-1 flex flex-col gap-8">
-                    {/* Share Button - sticky on desktop */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: 0.2 }}
-                        className="sticky top-24 z-10"
-                    >
-                        <button
-                            onClick={handleShare}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-semibold shadow transition"
-                        >
-                            <Share2 className="h-5 w-5" />
-                            {t('article.shareArticle')}
-                        </button>
-                    </motion.div>
-
-                    {/* Related Articles */}
-                    {relatedArticles.length > 0 && (
-                        <motion.div
-                            initial={{ opacity: 0, x: 20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: 0.3 }}
-                            className="rounded-xl border bg-white p-4 shadow-sm"
-                        >
-                            <h3 className="mb-4 font-semibold">{t('article.relatedArticles')}</h3>
-                            <div className="space-y-4">
-                                {relatedArticles.map((related) => (
-                                    <Link
-                                        key={related.id}
-                                        href={`/article/${related.slug}`}
-                                        className="group flex gap-3 rounded-lg border hover:border-primary/40 p-2 transition"
-                                    >
-                                        <img
-                                            src={related.thumbnail ? `/storage/${related.thumbnail}` : '/assets/images/placeholder.png'}
-                                            alt={related.title}
-                                            className="h-16 w-20 flex-shrink-0 rounded object-cover"
-                                        />
-                                        <div className="min-w-0 flex-1">
-                                            <h4 className="group-hover:text-primary line-clamp-2 text-sm font-medium">{related.title}</h4>
-                                            <div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
-                                                <Clock className="h-3 w-3" />
-                                                {t('article.min', { count: related.read_time })}
-                                                <Calendar className="h-3 w-3 ml-2" />
-                                                {format(new Date(related.published_at), 'dd MMM', { locale: dateFnsLocale })}
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))}
-                            </div>
-                        </motion.div>
-                    )}
-
-                    {/* CTA */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: 0.4 }}
-                        className="bg-primary text-primary-foreground rounded-xl p-6 shadow"
-                    >
-                        <h3 className="mb-2 text-lg font-semibold">{t('article.wantToLearnMore')}</h3>
-                        <p className="mb-4 text-sm opacity-90">{t('article.ctaDesc')}</p>
-                        <div className="space-y-2">
-                            <Link
-                                href="/course"
-                                className="group flex items-center gap-3 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 px-4 py-3 text-sm font-medium text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                            >
-                                <BookText className="h-5 w-5 transition-transform group-hover:rotate-12" />
-                                <span>{t('article.viewCourses')}</span>
-                            </Link>
-                            <Link
-                                href="/bootcamp"
-                                className="group flex items-center gap-3 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 px-4 py-3 text-sm font-medium text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                            >
-                                <Presentation className="h-5 w-5 transition-transform group-hover:rotate-12" />
-                                <span>{t('article.viewBootcamps')}</span>
-                            </Link>
-                            {/* <Link
-                                href="/webinar"
-                                className="group flex items-center gap-3 rounded-lg bg-gradient-to-r from-pink-500 to-rose-600 px-4 py-3 text-sm font-medium text-white shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                            >
-                                <MonitorPlay className="h-5 w-5 transition-transform group-hover:rotate-12" />
-                                <span>Lihat Webinar</span>
-                            </Link> */}
                         </div>
-                    </motion.div>
+                    </article>
+
+                    {/* Sidebar */}
+                    <aside className="flex flex-col gap-8 lg:sticky lg:top-24 lg:self-start">
+                        {relatedArticles.length > 0 && (
+                            <div>
+                                <h2 className="mb-4 text-sm font-semibold tracking-wider text-[#5B6B7F] uppercase">{t('article.relatedArticles')}</h2>
+                                <ul className="space-y-4">
+                                    {relatedArticles.map((related) => (
+                                        <li key={related.id}>
+                                            <Link href={`/article/${related.slug}`} className="group flex gap-3">
+                                                <img
+                                                    src={resolveStorageUrl(related.thumbnail) || '/assets/images/placeholder.png'}
+                                                    alt=""
+                                                    loading="lazy"
+                                                    className="h-16 w-20 shrink-0 rounded-lg border border-[#EEF2F6] object-cover"
+                                                />
+                                                <span className="min-w-0">
+                                                    <span className="line-clamp-2 text-sm leading-snug font-semibold text-[#162230] group-hover:text-[#1976D3]">
+                                                        {related.title}
+                                                    </span>
+                                                    <span className="mt-1 block text-xs text-[#5B6B7F]">
+                                                        {format(new Date(related.published_at), 'dd MMM yyyy', { locale: dateFnsLocale })} ·{' '}
+                                                        {t('article.min', { count: related.read_time })}
+                                                    </span>
+                                                </span>
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+
+                        {/* CTA */}
+                        <div className="rounded-xl bg-[#12344E] p-6 text-white">
+                            <h2 className="font-literata text-lg font-bold">{t('article.wantToLearnMore')}</h2>
+                            <p className="mt-2 text-sm leading-relaxed text-slate-300">{t('article.ctaDesc')}</p>
+                            <div className="mt-5 flex flex-col gap-2">
+                                <Link
+                                    href="/bootcamp"
+                                    className="group inline-flex items-center justify-between rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-[#12344E] transition-colors hover:bg-[#EAF3FC]"
+                                >
+                                    {t('article.viewBootcamps')}
+                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                </Link>
+                                <Link
+                                    href="/course"
+                                    className="group inline-flex items-center justify-between rounded-lg border border-white/25 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                                >
+                                    {t('article.viewCourses')}
+                                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                                </Link>
+                            </div>
+                        </div>
+                    </aside>
                 </div>
             </div>
         </UserLayout>

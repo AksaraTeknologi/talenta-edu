@@ -1,6 +1,6 @@
-import { Badge } from '@/components/ui/badge';
+import { formatIndonesianDate } from '@/lib/utils';
 import { format } from 'date-fns';
-import { id, enUS } from 'date-fns/locale';
+import { enUS, id } from 'date-fns/locale';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
@@ -22,7 +22,8 @@ interface CertificationProgram {
 
 export default function ScheduleInfoSection({ program }: { program: CertificationProgram }) {
     const { t, i18n } = useTranslation('user');
-    const dateLocale = i18n.language === 'en' ? enUS : id;
+    const lang = i18n.language || 'id';
+    const dateLocale = lang.startsWith('en') ? enUS : id;
     const schedules = program.schedules ?? [];
     const socializationSchedules =
         program.socializationSchedules ?? (program as CertificationProgram & { socialization_schedules?: Schedule[] }).socialization_schedules ?? [];
@@ -31,76 +32,65 @@ export default function ScheduleInfoSection({ program }: { program: Certificatio
 
     const getDate = (s: Schedule) => s.schedule_date || s.start_date || '';
     const getDayLabel = (s: Schedule) => {
-        if (s.day?.trim()) {
-            return s.day;
-        }
-
+        if (s.day?.trim()) return s.day;
         const dateValue = getDate(s);
-        if (!dateValue) {
-            return '';
-        }
-
+        if (!dateValue) return '';
         return format(new Date(dateValue), 'EEEE', { locale: dateLocale });
     };
 
-    const formatDate = (value: string) => format(new Date(value), 'dd MMMM yyyy', { locale: dateLocale });
-    const formatTime = (value?: string) => (value ? value.slice(0, 5) : '');
+    const formatTime = (value?: string) => (value ? value.slice(0, 5).replace(':', lang.startsWith('en') ? ':' : '.') : '');
 
     return (
-        <section className="mx-auto mt-16 mb-8 sm:mb-12 w-full max-w-5xl px-4" id="schedules">
+        <section className="space-y-6 rounded-2xl border border-[#DCE3EC] bg-white p-5 shadow-xs sm:p-6" id="schedules">
             {schedules.length > 0 && (
-                <div className="mb-12">
-                    <h2 className="dark:text-primary-foreground font-literata mb-4 text-center text-3xl font-bold text-gray-900 md:text-4xl">
+                <div>
+                    <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
                         {t('certificationProgram.detail.schedule.badge', 'Jadwal Pelaksanaan')}
                     </h2>
-                    <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
+                    <p className="mt-1 mb-5 text-sm text-[#5B6B7F]">
                         {t('certificationProgram.detail.schedule.sessionSubtitle', 'Rangkaian sesi program yang akan dilaksanakan')}
                     </p>
-                    
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+
+                    <div className="grid gap-4 sm:grid-cols-2">
                         {schedules.map((schedule, index) => {
                             const dateValue = getDate(schedule);
                             const startTime = formatTime(schedule.start_time);
                             const endTime = formatTime(schedule.end_time);
 
                             return (
-                                <div
-                                    key={schedule.id}
-                                    className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow dark:border-zinc-700 dark:bg-zinc-800"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-0 rounded-full px-3 py-1 font-semibold">
+                                <div key={schedule.id} className="flex flex-col gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                    <div className="flex items-center justify-between gap-2">
+                                        <span className="rounded-md border border-[#BFDBFE] bg-[#EAF3FC] px-2.5 py-0.5 text-xs font-semibold text-[#155FA8]">
                                             {t('certificationProgram.detail.schedule.sessionPrefix', 'Sesi {{index}}', { index: index + 1 })}
-                                        </Badge>
-                                        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                                            {getDayLabel(schedule)}
                                         </span>
+                                        <span className="text-xs font-medium tracking-wide text-[#5B6B7F] uppercase">{getDayLabel(schedule)}</span>
                                     </div>
-                                    
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2">
-                                            {schedule.title || (dateValue ? formatDate(dateValue) : t('certificationProgram.detail.schedule.sessionPrefix', 'Sesi {{index}}', { index: index + 1 }))}
-                                        </h3>
-                                        
-                                        <div className="flex flex-col gap-2 mt-4">
-                                            {dateValue && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                    <Calendar className="h-4 w-4 text-primary" />
-                                                    <span>{formatDate(dateValue)}</span>
-                                                </div>
-                                            )}
-                                            
-                                            {(startTime || endTime) && (
-                                                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                    <Clock className="h-4 w-4 text-primary" />
-                                                    <span>{startTime || '--:--'} {endTime ? `- ${endTime} WIB` : 'WIB'}</span>
-                                                </div>
-                                            )}
-                                            
-                                            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                                                <MapPin className="h-4 w-4 text-primary" />
-                                                <span>{t('certificationProgram.detail.register.online', 'Online')}</span>
+
+                                    <h3 className="line-clamp-2 text-base font-semibold text-[#162230]">
+                                        {schedule.title ||
+                                            (dateValue
+                                                ? formatIndonesianDate(dateValue, lang)
+                                                : t('certificationProgram.detail.schedule.sessionPrefix', 'Sesi {{index}}', { index: index + 1 }))}
+                                    </h3>
+
+                                    <div className="mt-auto space-y-1.5 text-xs text-[#475569] sm:text-sm">
+                                        {dateValue && (
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 shrink-0 text-[#1976D3]" />
+                                                <span>{formatIndonesianDate(dateValue, lang)}</span>
                                             </div>
+                                        )}
+                                        {(startTime || endTime) && (
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="h-4 w-4 shrink-0 text-[#1976D3]" />
+                                                <span>
+                                                    {startTime || '--.--'} {endTime ? `– ${endTime} WIB` : 'WIB'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2">
+                                            <MapPin className="h-4 w-4 shrink-0 text-[#1976D3]" />
+                                            <span>{t('certificationProgram.detail.register.online', 'Online')}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -111,52 +101,49 @@ export default function ScheduleInfoSection({ program }: { program: Certificatio
             )}
 
             {program.type === 'scholarship' && socializationSchedules.length > 0 && (
-                <div>
-                    <h2 className="dark:text-primary-foreground font-literata mb-4 text-center text-3xl font-bold text-gray-900 md:text-4xl">
+                <div className="border-t border-[#DCE3EC] pt-6">
+                    <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
                         {t('certificationProgram.detail.schedule.socializationBadge', 'Jadwal Sosialisasi')}
                     </h2>
-                    <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
+                    <p className="mt-1 mb-5 text-sm text-[#5B6B7F]">
                         {t('certificationProgram.detail.schedule.socializationSubtitle', 'Tahapan awal sosialisasi beasiswa sebelum proses seleksi utama dimulai')}
                     </p>
-                    
-                    <div className="grid gap-4 md:grid-cols-2">
+
+                    <div className="grid gap-4 sm:grid-cols-2">
                         {socializationSchedules.map((schedule, index) => {
                             const dateValue = getDate(schedule);
                             const startTime = formatTime(schedule.start_time);
                             const endTime = formatTime(schedule.end_time);
 
                             return (
-                                <div
-                                    key={schedule.id}
-                                    className="flex items-start gap-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow dark:border-zinc-700 dark:bg-zinc-800"
-                                >
-                                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
-                                        <Calendar className="h-6 w-6" />
+                                <div key={schedule.id} className="rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                    <div className="mb-2 flex items-center justify-between gap-2">
+                                        <h3 className="text-base font-semibold text-[#162230]">
+                                            {schedule.title ||
+                                                t('certificationProgram.detail.schedule.socializationStage', 'Tahap {{index}}', { index: index + 1 })}
+                                        </h3>
+                                        <span className="shrink-0 rounded-md border border-[#FED7AA] bg-[#FFF3EB] px-2.5 py-0.5 text-xs font-semibold text-[#B8470A]">
+                                            {t('certificationProgram.detail.schedule.socializationTag', 'Sosialisasi')}
+                                        </span>
                                     </div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between gap-2 mb-1">
-                                            <h3 className="text-base font-semibold text-gray-900 dark:text-white">
-                                                {schedule.title || t('certificationProgram.detail.schedule.socializationStage', 'Tahap {{index}}', { index: index + 1 })}
-                                            </h3>
-                                            <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 border-0 rounded-full text-xs shrink-0 dark:bg-purple-900/30 dark:text-purple-400">
-                                                {t('certificationProgram.detail.schedule.socializationTag', 'Sosialisasi')}
-                                            </Badge>
-                                        </div>
-                                        
-                                        <div className="mt-2 space-y-1">
-                                            {dateValue && (
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                                    <span className="font-medium min-w-[60px]">{t('bootcamp.detail.scheduleInfo.date', 'Tanggal')}</span>
-                                                    <span>: {getDayLabel(schedule)}, {formatDate(dateValue)}</span>
-                                                </p>
-                                            )}
-                                            {(startTime || endTime) && (
-                                                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
-                                                    <span className="font-medium min-w-[60px]">{t('bootcamp.detail.scheduleInfo.time', 'Waktu')}</span>
-                                                    <span>: {startTime || '--:--'} {endTime ? `- ${endTime} WIB` : 'WIB'}</span>
-                                                </p>
-                                            )}
-                                        </div>
+
+                                    <div className="space-y-1.5 text-xs text-[#475569] sm:text-sm">
+                                        {dateValue && (
+                                            <p className="flex items-center gap-2">
+                                                <Calendar className="h-4 w-4 shrink-0 text-[#1976D3]" />
+                                                <span>
+                                                    {getDayLabel(schedule)}, {formatIndonesianDate(dateValue, lang)}
+                                                </span>
+                                            </p>
+                                        )}
+                                        {(startTime || endTime) && (
+                                            <p className="flex items-center gap-2">
+                                                <Clock className="h-4 w-4 shrink-0 text-[#1976D3]" />
+                                                <span>
+                                                    {startTime || '--.--'} {endTime ? `– ${endTime} WIB` : 'WIB'}
+                                                </span>
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             );

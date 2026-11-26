@@ -1,175 +1,194 @@
+import { parseList, resolveStorageUrl } from '@/lib/utils';
+import { BadgeCheck, BookOpen } from 'lucide-react';
 import { useState } from 'react';
-import { BadgeCheck, BookOpen, Target, Wrench } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 import { useTranslation } from 'react-i18next';
 
 interface Bootcamp {
     description?: string | null;
+    curriculum?: string | null;
     benefits?: string | null;
     requirements?: string | null;
     tools?: { name: string; description?: string | null; icon: string | null }[];
 }
 
-function parseList(items?: string | null): string[] {
-    if (!items) return [];
-    const matches = items.match(/<li>(.*?)<\/li>/g);
-    if (!matches) return [];
-    return matches.map((li) => li.replace(/<\/?li>/g, '').trim());
-}
-
 export default function AboutSection({ bootcamp }: { bootcamp: Bootcamp }) {
     const { t } = useTranslation('user');
     const [activeTab, setActiveTab] = useState('description');
+    const curriculumItems = parseList(bootcamp.curriculum);
     const benefits = parseList(bootcamp.benefits);
     const requirements = parseList(bootcamp.requirements);
 
     const tabList = [
         { key: 'description', label: t('bootcamp.register.tabDetail', 'Deskripsi') },
+        ...(curriculumItems.length > 0 || bootcamp.curriculum
+            ? [{ key: 'curriculum', label: t('bootcamp.detail.tabCurriculum', 'Kurikulum') }]
+            : []),
         { key: 'benefits', label: t('bootcamp.detail.benefitsGained', 'Manfaat') },
-        { key: 'requirements', label: t('bootcamp.detail.tabRequirements', 'Persyaratan') },
-        { key: 'tools', label: t('bootcamp.detail.tabTools', 'Tools') },
+        ...(requirements.length > 0 ? [{ key: 'requirements', label: t('bootcamp.detail.tabRequirements', 'Persyaratan') }] : []),
+        ...(bootcamp.tools && bootcamp.tools.length > 0 ? [{ key: 'tools', label: t('bootcamp.detail.tabTools', 'Tools') }] : []),
     ];
 
     return (
-        <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12 lg:mb-16" id="about">
-            
-            {/* Tabs */}
-            <div className="mb-6 sm:mb-8 overflow-x-auto">
-                <div className="flex justify-start items-start gap-8 md:gap-40 min-w-max">
+        <section className="rounded-2xl border border-[#DCE3EC] bg-white p-5 shadow-xs sm:p-6" id="about">
+            {/* Clean Tab Bar */}
+            <div className="mb-6 overflow-x-auto border-b border-[#DCE3EC]">
+                <div className="flex min-w-max items-center gap-6">
                     {tabList.map((tab) => (
                         <button
                             key={tab.key}
+                            type="button"
                             onClick={() => setActiveTab(tab.key)}
-                            className={`py-2 text-sm sm:text-base md:text-lg whitespace-nowrap transition ${
+                            className={`min-h-11 border-b-2 px-1 pb-2.5 text-sm font-semibold whitespace-nowrap transition-colors hover:cursor-pointer sm:text-base ${
                                 activeTab === tab.key
-                                    ? 'underline underline-offset-12 md:underline-offset-18 decoration-2 sm:decoration-3 md:decoration-4 text-primary font-medium'
-                                    : 'hover:cursor-pointer hover:text-primary/70'
+                                    ? 'border-[#1976D3] text-[#1976D3]'
+                                    : 'border-transparent text-[#5B6B7F] hover:text-[#12344E]'
                             }`}
                         >
                             {tab.label}
                         </button>
                     ))}
                 </div>
-                <Separator className="mt-0.1 sm:mt-0.5 py-0.4 md:py-0.5 max-w-xs md:max-w-4xl" />
             </div>
 
-            {/* Tab Content */}
             <div>
                 {activeTab === 'description' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                            <p className='font-literata font-medium text-xl sm:text-2xl md:text-3xl'>{t('bootcamp.detail.navAbout', 'Deskripsi Bootcamp')}</p>
-                        </div>
-                        <p className='mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400'>
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('bootcamp.detail.navAbout', 'Deskripsi Bootcamp')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
                             {t('bootcamp.detail.heroDefaultDesc', 'Gambaran lengkap tentang bootcamp ini dan apa yang akan Anda pelajari.')}
                         </p>
-                        <div className="prose prose-sm sm:prose-base max-w-none">
-                            <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed">
-                                {bootcamp.description || t('bootcamp.detail.curriculumEmpty', 'Tidak ada deskripsi tersedia.')}
-                            </p>
-                        </div>
-                    </>
+                        <p className="text-sm leading-relaxed whitespace-pre-line text-[#475569] sm:text-base">
+                            {bootcamp.description || t('bootcamp.detail.curriculumEmpty', 'Tidak ada deskripsi tersedia.')}
+                        </p>
+                    </div>
+                )}
+
+                {activeTab === 'curriculum' && (
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('bootcamp.detail.curriculumTitle', 'Materi yang Akan Dipelajari')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
+                            {t('bootcamp.detail.curriculumSubtitle', 'Kurikulum terstruktur dari dasar hingga praktik langsung.')}
+                        </p>
+                        {curriculumItems.length > 0 ? (
+                            <ul className="space-y-3">
+                                {curriculumItems.map((item, idx) => (
+                                    <li key={idx} className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#12344E] text-xs font-semibold text-white">
+                                            {idx + 1}
+                                        </div>
+                                        <p className="flex-1 text-sm leading-relaxed text-[#162230]">{item}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <div
+                                className="prose prose-sm max-w-none text-[#475569]"
+                                dangerouslySetInnerHTML={{ __html: bootcamp.curriculum || '' }}
+                            />
+                        )}
+                    </div>
                 )}
 
                 {activeTab === 'benefits' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">  
-                            <p className='font-literata font-medium text-xl sm:text-2xl md:text-3xl'>{t('bootcamp.detail.benefitsGained', 'Manfaat yang Akan Didapat')}</p>
-                        </div>
-                        <p className='mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400'>
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('bootcamp.detail.benefitsGained', 'Manfaat yang Akan Didapat')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
                             {t('bootcamp.register.whatYouWillGetDesc', 'Berbagai manfaat dan keuntungan yang akan Anda dapatkan setelah mengikuti bootcamp ini.')}
                         </p>
                         {benefits.length > 0 ? (
-                            <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                            <ul className="grid grid-cols-1 gap-3 md:grid-cols-2">
                                 {benefits.map((benefit, idx) => (
-                                    <li key={idx} className="flex items-center gap-2 sm:gap-3">
-                                        <BadgeCheck className="mt-0.5 sm:mt-1 min-w-8 sm:min-w-10 md:min-w-12 h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-green-600 flex-shrink-0" />
-                                        <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300">{benefit}</p>
+                                    <li key={idx} className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-3.5">
+                                        <BadgeCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#15803D]" />
+                                        <p className="text-sm leading-relaxed text-[#162230]">{benefit}</p>
                                     </li>
                                 ))}
                             </ul>
                         ) : (
-                            <div className="grid grid-cols-1 gap-8 rounded-lg border border-gray-200 bg-white p-6 md:grid-cols-3 dark:border-zinc-700 dark:bg-zinc-800">
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                    <h3 className="text-2xl sm:text-3xl font-bold font-literata text-center">{t('bootcamp.detail.curriculumModern', 'Kurikulum Modern')}</h3>
-                                    <p className="text-muted-foreground text-center text-xs sm:text-sm">
-                                        {t('bootcamp.detail.curriculumModernDesc', 'Dirancang sesuai kebutuhan industri terkini untuk memastikan Anda siap menghadapi tantangan nyata.')}
+                            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <div className="rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                    <BookOpen className="mb-2 h-5 w-5 text-[#1976D3]" />
+                                    <h3 className="text-base font-semibold text-[#12344E]">
+                                        {t('bootcamp.detail.curriculumModern', 'Kurikulum Terstruktur')}
+                                    </h3>
+                                    <p className="mt-1 text-xs leading-relaxed text-[#475569] sm:text-sm">
+                                        {t('bootcamp.detail.curriculumModernDesc', 'Dirancang sesuai kebutuhan praktik akuntansi dan perpajakan terkini.')}
                                     </p>
                                 </div>
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                    <h3 className="text-2xl sm:text-3xl font-bold font-literata text-center">{t('bootcamp.detail.careerReady', 'Siap Karir')}</h3>
-                                    <p className="text-muted-foreground text-center text-xs sm:text-sm">
-                                        {t('bootcamp.detail.careerReadyDesc', 'Membangun fondasi yang kuat dengan portofolio proyek nyata untuk memulai karir di dunia teknologi.')}
+                                <div className="rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                    <BadgeCheck className="mb-2 h-5 w-5 text-[#15803D]" />
+                                    <h3 className="text-base font-semibold text-[#12344E]">
+                                        {t('bootcamp.detail.careerReady', 'Siap Kerja')}
+                                    </h3>
+                                    <p className="mt-1 text-xs leading-relaxed text-[#475569] sm:text-sm">
+                                        {t('bootcamp.detail.careerReadyDesc', 'Dilengkapi studi kasus nyata untuk bekal langsung di dunia kerja.')}
                                     </p>
                                 </div>
-                                <div className="flex flex-col items-center justify-center gap-2">
-                                    <h3 className="text-2xl sm:text-3xl font-bold font-literata text-center">{t('bootcamp.detail.fullSupport', 'Dukungan Penuh')}</h3>
-                                    <p className="text-muted-foreground text-center text-xs sm:text-sm">
-                                        {t('bootcamp.detail.fullSupportDesc', 'Dapatkan dukungan dari mentor berpengalaman dan komunitas belajar yang aktif selama perjalanan Anda.')}
+                                <div className="rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                    <BadgeCheck className="mb-2 h-5 w-5 text-[#1976D3]" />
+                                    <h3 className="text-base font-semibold text-[#12344E]">
+                                        {t('bootcamp.detail.fullSupport', 'Dukungan Mentor')}
+                                    </h3>
+                                    <p className="mt-1 text-xs leading-relaxed text-[#475569] sm:text-sm">
+                                        {t('bootcamp.detail.fullSupportDesc', 'Bimbingan langsung dari mentor praktisi selama program berlangsung.')}
                                     </p>
                                 </div>
                             </div>
                         )}
-                    </>
+                    </div>
                 )}
 
-                {activeTab === 'requirements' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                            <BadgeCheck className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary" />
-                            <p className='font-literata font-medium text-xl sm:text-2xl md:text-3xl'>{t('bootcamp.detail.participantRequirements', 'Persyaratan & Persiapan')}</p>
-                        </div>
-                        <p className='mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400'>
+                {activeTab === 'requirements' && requirements.length > 0 && (
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('bootcamp.detail.participantRequirements', 'Persyaratan & Persiapan')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
                             {t('bootcamp.register.participantRequirementsDesc', 'Persyaratan yang perlu Anda penuhi sebelum mengikuti bootcamp ini.')}
                         </p>
-                        {requirements.length > 0 ? (
-                            <ul className="space-y-3 sm:space-y-4">
-                                {requirements.map((requirement, idx) => (
-                                    <li key={idx} className="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                                        <div className="flex-shrink-0 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-primary text-white flex items-center justify-center text-xs sm:text-sm font-semibold mt-0.5">
-                                            {idx + 1}
-                                        </div>
-                                        <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 flex-1">{requirement}</p>
-                                    </li>
-                                ))}
-                            </ul>
-                        ) : (
-                            <p className="text-gray-500 text-sm sm:text-base">{t('bootcamp.detail.requirementsEmpty', 'Tidak ada persyaratan khusus yang diperlukan.')}</p>
-                        )}
-                    </>
+                        <ul className="space-y-3">
+                            {requirements.map((requirement, idx) => (
+                                <li key={idx} className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-4">
+                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#12344E] text-xs font-semibold text-white">
+                                        {idx + 1}
+                                    </div>
+                                    <p className="flex-1 text-sm leading-relaxed text-[#162230]">{requirement}</p>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
 
-                {activeTab === 'tools' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                            <Wrench className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary" />
-                            <p className='font-literata font-medium text-xl sm:text-2xl md:text-3xl'>{t('bootcamp.detail.toolsUsed', 'Tools yang Digunakan')}</p>
-                        </div>
-                        <p className='mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400'>
+                {activeTab === 'tools' && bootcamp.tools && bootcamp.tools.length > 0 && (
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('bootcamp.detail.toolsUsed', 'Tools yang Digunakan')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
                             {t('bootcamp.detail.toolsSubtitle', 'Berbagai alat/software yang akan digunakan atau dipelajari dalam bootcamp ini.')}
                         </p>
-                        {bootcamp.tools && bootcamp.tools.length > 0 ? (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
-                                {bootcamp.tools.map((tool) => (
-                                    <div
-                                        key={tool.name}
-                                        className="flex flex-col items-center justify-center gap-2 rounded-lg bg-white py-5 sm:py-6 shadow-md dark:bg-zinc-800 hover:shadow-lg transition-shadow border border-gray-200 dark:border-zinc-700"
-                                    >
-                                        <img 
-                                            src={tool.icon ? `/storage/${tool.icon}` : '/assets/images/placeholder.png'} 
-                                            alt={tool.name} 
-                                            className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 object-contain" 
-                                        />
-                                        <h3 className="text-xs sm:text-sm md:text-base font-semibold text-center line-clamp-2 px-2">
-                                            {tool.name}
-                                        </h3>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-gray-500 text-sm sm:text-base">{t('bootcamp.detail.toolsEmpty', 'Tidak ada tools khusus yang diperlukan.')}</p>
-                        )}
-                    </>
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                            {bootcamp.tools.map((tool) => (
+                                <div
+                                    key={tool.name}
+                                    className="flex flex-col items-center justify-center gap-2.5 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4 text-center"
+                                >
+                                    <img
+                                        src={resolveStorageUrl(tool.icon) || '/assets/images/placeholder.png'}
+                                        alt={tool.name}
+                                        className="h-12 w-12 object-contain"
+                                    />
+                                    <h3 className="line-clamp-2 text-xs font-semibold text-[#162230] sm:text-sm">{tool.name}</h3>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )}
             </div>
         </section>

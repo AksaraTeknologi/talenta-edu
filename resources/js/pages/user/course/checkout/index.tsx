@@ -1,12 +1,17 @@
+import { CheckoutHeader } from '@/components/checkout-header';
+import { PaymentStatusCard } from '@/components/payment-status-card';
+import { ProgramBadge } from '@/components/program-badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Toaster } from '@/components/ui/sonner';
+import { resolveStorageUrl } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { BadgeCheck, Check, Hourglass, ShoppingCart, User, X } from 'lucide-react';
+import { BadgeCheck, Check, ChevronDown, LoaderCircle, Shield, Tag, User, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -136,6 +141,7 @@ export default function CheckoutCourse({
     const [pointsError, setPointsError] = useState('');
 
     const [promoCode, setPromoCode] = useState('');
+    const [promoOpen, setPromoOpen] = useState(false);
     const [discountData, setDiscountData] = useState<DiscountData | null>(null);
     const [promoLoading, setPromoLoading] = useState(false);
     const [promoError, setPromoError] = useState('');
@@ -461,391 +467,188 @@ export default function CheckoutCourse({
 
     if (isLoggedIn && !isProfileComplete) {
         return (
-            <div className="min-h-screen bg-[url('/assets/images/bg-product.png')] bg-cover bg-center bg-no-repeat">
+            <div className="min-h-screen bg-[#FAF8F4]">
                 <Head title={t('course.checkout.title', 'Checkout Kelas')} />
-                <section className="flex min-h-screen items-center justify-center px-4 py-12">
-                    <div className="w-full max-w-md">
-                        <div className="flex flex-col items-center justify-center space-y-6 rounded-2xl border bg-white/95 p-8 shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
-                            <div className="rounded-full bg-orange-100 p-6 dark:bg-orange-900/30">
-                                <User size={48} className="text-orange-600 dark:text-orange-400" />
-                            </div>
-                            <div className="text-center">
-                                <h2 className="mb-2 text-2xl font-bold">{t('course.checkout.profileIncompleteTitle', 'Profil Belum Lengkap')}</h2>
-                                <p className="text-gray-600 dark:text-gray-400">
-                                    {t('course.checkout.profileIncompleteDesc', 'Harap lengkapi nomor telepon terlebih dahulu untuk melanjutkan checkout')}
-                                </p>
-                            </div>
-                            <Button asChild className="w-full" size="lg">
-                                <Link href={route('profile.edit', { redirect: window.location.href })}>{t('course.checkout.btnCompleteProfile', 'Lengkapi Profil')}</Link>
-                            </Button>
+                <CheckoutHeader backHref={route('course.detail', course.slug)} />
+                <section className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
+                    <div className="w-full max-w-md rounded-2xl border border-[#DCE3EC] bg-white p-8 text-center shadow-sm">
+                        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#FFF3EB]">
+                            <User className="h-7 w-7 text-[#D95B16]" />
                         </div>
+                        <h1 className="font-literata mb-2 text-2xl font-bold text-[#12344E]">
+                            {t('course.checkout.profileIncompleteTitle', 'Profil Belum Lengkap')}
+                        </h1>
+                        <p className="mb-6 text-sm leading-relaxed text-[#475569]">
+                            {t('course.checkout.profileIncompleteDesc', 'Harap lengkapi nomor telepon terlebih dahulu untuk melanjutkan checkout')}
+                        </p>
+                        <Button asChild className="h-11 w-full font-semibold" size="lg">
+                            <Link href={route('profile.edit', { redirect: window.location.href })}>
+                                {t('course.checkout.btnCompleteProfile', 'Lengkapi Profil')}
+                            </Link>
+                        </Button>
                     </div>
                 </section>
             </div>
         );
     }
 
-    return (
-        <div className="min-h-screen bg-[url('/assets/images/bg-product.png')] bg-cover bg-center bg-no-repeat">
-            <Head title={t('course.checkout.title', 'Checkout Kelas')} />
+    const promoApplied = (codeType === 'voucher' && !!discountData?.valid) || (codeType === 'referral' && !!referralData?.valid);
+    const showDisabledReason = !isFree && !termsAccepted && !loading && !activeInstallment;
 
-            <section className="mx-auto w-full max-w-7xl px-4 py-12">
-                <div className="mb-8 px-4">
-                    <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
-                        <Link href="/course" className="hover:text-orange-600">
+    return (
+        <div className="min-h-screen bg-[#FAF8F4]">
+            <Head title={t('course.checkout.title', 'Checkout Kelas')} />
+            <CheckoutHeader backHref={route('course.detail', course.slug)} />
+
+            <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+                <div className="mb-6">
+                    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs text-[#5B6B7F] sm:text-sm">
+                        <Link href="/course" className="transition-colors hover:text-[#1976D3]">
                             {t('course.checkout.crumbCourse', 'Kelas')}
                         </Link>
                         <span>/</span>
-                        <Link href={`/course/${course.slug}`} className="hover:text-orange-600">
+                        <Link href={`/course/${course.slug}`} className="max-w-[240px] truncate transition-colors hover:text-[#1976D3] sm:max-w-md">
                             {course.title}
                         </Link>
                         <span>/</span>
-                        <span className="text-gray-900 dark:text-white">Checkout</span>
-                    </div>
-                    <h1 className="mt-8 text-3xl font-bold text-gray-900 md:text-4xl dark:text-white">Checkout</h1>
+                        <span className="font-medium text-[#12344E]">Checkout</span>
+                    </nav>
+                    <h1 className="font-literata mt-3 text-2xl font-bold text-[#12344E] sm:text-3xl">
+                        {t('course.checkout.title', 'Checkout Kelas')}
+                    </h1>
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-3">
+                <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
                     {/* Product Info */}
-                    <div className={!pendingInvoice ? 'lg:col-span-2' : 'lg:col-span-3'}>
-                        <div className="overflow-hidden rounded-2xl border bg-white/95 shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
-                            <div className="border-b bg-gray-50/80 p-4 dark:bg-gray-900/80">
-                                <div className="flex items-center gap-2 text-gray-900 dark:text-white">
-                                    <ShoppingCart className="h-5 w-5" />
-                                    <h2 className="text-lg font-semibold">{t('course.checkout.orderDetailTitle', 'Detail Pesanan')}</h2>
-                                </div>
+                    <div className={!pendingInvoice ? 'space-y-6 lg:col-span-7' : 'space-y-6 lg:col-span-12'}>
+                        <div className="overflow-hidden rounded-2xl border border-[#DCE3EC] bg-white shadow-sm">
+                            <div className="border-b border-[#DCE3EC] bg-[#FAF8F4] px-5 py-3.5">
+                                <h2 className="text-sm font-semibold uppercase tracking-wide text-[#5B6B7F]">
+                                    {t('webinar.register.programInfoTitle', 'Program Dipilih')}
+                                </h2>
                             </div>
-                            <div className="p-6">
-                                <div className="flex gap-4">
-                                    <div className="h-24 w-32 flex-shrink-0 overflow-hidden rounded-lg">
-                                        <img
-                                            src={course.thumbnail ? `/storage/${course.thumbnail}` : '/assets/images/placeholder.png'}
-                                            alt={course.title}
-                                            className="h-full w-full object-cover"
-                                        />
+                            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                                <div className="h-24 w-full shrink-0 overflow-hidden rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] sm:w-36">
+                                    <img
+                                        src={resolveStorageUrl(course.thumbnail) || '/assets/images/placeholder.png'}
+                                        alt={course.title}
+                                        className="h-full w-full object-contain p-1.5"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <ProgramBadge type="course" />
+                                        {getLevelBadge(course.level)}
                                     </div>
-                                    <div className="flex-1">
-                                        <span className="mb-2 inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
-                                            Kelas Online
-                                        </span>
-                                        <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">{course.title}</h3>
-                                        <div className="flex items-center gap-2">{getLevelBadge(course.level)}</div>
-                                    </div>
+                                    <h3 className="font-literata text-lg font-bold leading-snug text-[#12344E]">{course.title}</h3>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Payment Channels Section */}
-                        
-                        {/* {!isFree && channels.length > 0 && !pendingInvoice && !hasAccess && ( */}
-                            {/* <div className="mt-6 overflow-hidden rounded-2xl border bg-white/95 shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
-                                <div className="border-b bg-gray-50/80 p-4 dark:bg-gray-900/80">
-                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Metode Pembayaran</h2>
+                        {!isLoggedIn && !pendingInvoice && (
+                            <div className="flex flex-col justify-between gap-3 rounded-2xl border border-[#FDE68A] bg-[#FEFCE8] p-5 sm:flex-row sm:items-center">
+                                <div>
+                                    <p className="text-sm font-semibold text-[#854D0E]">
+                                        {t('course.checkout.loginRequiredTitle', 'Masuk Akun untuk Melanjutkan')}
+                                    </p>
+                                    <p className="mt-0.5 text-xs leading-relaxed text-[#A16207]">
+                                        {t('course.checkout.loginRequiredDesc', 'Silakan login terlebih dahulu untuk melanjutkan checkout kelas')}
+                                    </p>
                                 </div>
-                                <div className="p-6">
-                                    <div className="grid gap-3">
-                                        {channels.map((channel) => (
-                                            <div
-                                                key={channel.code}
-                                                onClick={() => setSelectedChannel(channel)}
-                                                className={`group cursor-pointer rounded-xl border-2 p-4 transition-all ${
-                                                    selectedChannel?.code === channel.code
-                                                        ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/20'
-                                                        : 'border-gray-200 hover:border-orange-300 dark:border-gray-700 dark:hover:border-orange-600'
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex flex-1 items-center gap-4">
-                                                        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
-                                                            <img
-                                                                src={channel.icon_url}
-                                                                alt={channel.name}
-                                                                className="h-full w-full object-contain p-1"
-                                                            />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <p className="font-semibold text-gray-900 dark:text-white">{channel.name}</p>
-                                                            <p className="text-xs text-gray-600 dark:text-gray-400">{channel.group}</p>
-                                                        </div>
-                                                    </div>
-                                                    <div
-                                                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all"
-                                                        style={{
-                                                            borderColor: selectedChannel?.code === channel.code ? '#ea580c' : '#d1d5db',
-                                                            backgroundColor: selectedChannel?.code === channel.code ? '#ea580c' : 'transparent',
-                                                        }}
-                                                    >
-                                                        {selectedChannel?.code === channel.code && <Check className="h-3 w-3 text-white" />}
-                                                    </div>
-                                                </div>
-                                                {selectedChannel?.code === channel.code && (
-                                                    <div className="mt-4 border-t border-orange-200 pt-4 dark:border-orange-900">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm font-semibold text-gray-600 dark:text-white">Biaya Admin</span>
-                                                            <span className="font-semibold text-orange-600">
-                                                                Rp {calculateAdminFee(channel).toLocaleString('id-ID')}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            </div> */}
-                        {/* )} */}
+                                <Button asChild size="sm" variant="outline" className="h-10 shrink-0 border-[#F59E0B] bg-white text-[#854D0E] hover:bg-[#FEF3C7]">
+                                    <Link href={route('login', { redirect: window.location.href })}>
+                                        {t('course.checkout.btnLogin', 'Masuk / Daftar')}
+                                    </Link>
+                                </Button>
+                            </div>
+                        )}
                     </div>
 
                     {/* Payment Section */}
-                    <div className={!pendingInvoice ? 'lg:col-span-1' : 'lg:col-span-3'}>
+                    <div className={!pendingInvoice ? 'lg:sticky lg:top-24 lg:col-span-5' : 'lg:col-span-12'}>
                         {hasAccess && (!activeInstallment || activeInstallment.is_fully_paid) ? (
-                            <div className="flex h-full flex-col items-center justify-center space-y-4 rounded-2xl border bg-white/95 p-6 text-center shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
-                                <div className="rounded-full bg-green-100 p-4 dark:bg-green-900/30">
-                                    <BadgeCheck size={48} className="text-green-600 dark:text-green-400" />
+                            <div className="flex flex-col items-center justify-center space-y-4 rounded-2xl border border-[#BBF7D0] bg-white p-6 text-center shadow-sm">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DCFCE7]">
+                                    <BadgeCheck className="h-7 w-7 text-[#15803D]" />
                                 </div>
                                 <div>
-                                    <h2 className="mb-2 text-xl font-bold">{t('course.checkout.hasAccessTitle', 'Sudah Memiliki Akses')}</h2>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    <h2 className="font-literata mb-1.5 text-xl font-bold text-[#12344E]">
+                                        {t('course.checkout.hasAccessTitle', 'Sudah Memiliki Akses')}
+                                    </h2>
+                                    <p className="text-sm text-[#475569]">
                                         {t('course.checkout.hasAccessDesc', 'Anda sudah terdaftar di kelas ini. Silakan lanjutkan belajar.')}
                                     </p>
                                 </div>
-                                <Button asChild className="w-full" size="lg">
+                                <Button asChild className="h-11 w-full bg-[#15803D] text-white hover:bg-[#166534]" size="lg">
                                     <a href={`/profile/my-courses/${course.slug}`}>{t('course.checkout.enterCourse', 'Masuk ke Kelas')}</a>
                                 </Button>
                             </div>
                         ) : pendingInvoice ? (
-                            <div className="overflow-hidden rounded-2xl border bg-white/95 shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
-                                <div
-                                    className="border-b p-4 dark:bg-yellow-900/20"
-                                    style={{
-                                        backgroundColor: (() => {
-                                            const expiryInfo = formatExpiryTime(pendingInvoice.expires_at);
-                                            const isExpired = expiryInfo.status === 'expired' && pendingInvoice.status === 'pending';
-                                            return isExpired ? '#fee2e2' : 'rgba(254, 249, 195, 0.5)';
-                                        })(),
-                                    }}
-                                >
-                                    <div className="flex items-center gap-2">
-                                        {(() => {
-                                            const expiryInfo = formatExpiryTime(pendingInvoice.expires_at);
-                                            const isExpired = expiryInfo.status === 'expired' && pendingInvoice.status === 'pending';
-                                            if (isExpired) {
-                                                return (
-                                                    <>
-                                                        <X className="h-5 w-5 text-red-600" />
-                                                        <h2 className="text-lg font-semibold text-red-700 dark:text-red-300">
-                                                            {t('course.checkout.paymentFailed', 'Pembayaran Gagal')}
-                                                        </h2>
-                                                    </>
-                                                );
-                                            }
-                                            return (
-                                                <>
-                                                    <Hourglass className="h-5 w-5 text-yellow-600" />
-                                                    <h2 className="text-lg font-semibold text-yellow-900 dark:text-yellow-200">
-                                                        {t('course.checkout.pendingInvoiceTitle', 'Pembayaran Tertunda')}
-                                                    </h2>
-                                                </>
-                                            );
-                                        })()}
-                                    </div>
-                                </div>
-
-                                <div className="space-y-6 p-6">
-                                    {/* Invoice Info */}
-                                    <div className="space-y-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600 dark:text-gray-400">No. Invoice</span>
-                                            <span className="font-semibold text-gray-900 dark:text-white">{pendingInvoice.invoice_code}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm text-gray-600 dark:text-gray-400">Total Pembayaran</span>
-                                            <span className="text-xl font-bold text-orange-600">
-                                                Rp {pendingInvoice.amount.toLocaleString('id-ID')}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {(() => {
-                                        const expiryInfo = formatExpiryTime(pendingInvoice.expires_at);
-                                        const isExpired = expiryInfo.status === 'expired' && pendingInvoice.status === 'pending';
-
-                                        // Pesan expired
-                                        if (isExpired) {
-                                            return (
-                                                <div className="rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
-                                                    <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                                                        Waktu pembayaran telah habis. Jika Anda sudah membayar atau butuh bantuan, silakan hubungi
-                                                        admin melalui&nbsp;
-                                                        <a
-                                                            href="https://wa.me/6289528514480"
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="font-bold text-orange-600 underline"
-                                                        >
-                                                            WhatsApp Admin
-                                                        </a>
-                                                        .
-                                                    </p>
-                                                </div>
-                                            );
+                            <PaymentStatusCard
+                                pendingInvoice={pendingInvoice}
+                                expiryInfo={formatExpiryTime(pendingInvoice.expires_at)}
+                                instructions={transactionDetail?.instructions}
+                                cancellingInvoice={cancellingInvoice}
+                                onCopy={copyToClipboard}
+                                onCancel={async () => {
+                                    if (confirm('Apakah Anda yakin ingin membatalkan transaksi ini dan membuat pesanan baru?')) {
+                                        setCancellingInvoice(true);
+                                        try {
+                                            await axios.post(route('invoice.cancel', pendingInvoice.id));
+                                            toast.success('Pesanan berhasil dibatalkan.');
+                                            window.location.reload();
+                                        } catch (err: any) {
+                                            toast.error(err.response?.data?.message || 'Gagal membatalkan pesanan.');
+                                            setCancellingInvoice(false);
                                         }
-
-                                        // Jika belum expired, tampilkan VA, QR, dan instruksi
-                                        return (
-                                            <>
-                                                {/* VA Number */}
-                                                {pendingInvoice.va_number && (
-                                                    <div className="space-y-3 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
-                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('course.checkout.vaNumber', 'Nomor Virtual Account')}</p>
-                                                        <div className="flex items-center justify-between rounded-lg bg-white p-3 dark:bg-gray-700">
-                                                            <span className="font-mono text-lg font-bold text-gray-900 dark:text-white">
-                                                                {pendingInvoice.va_number}
-                                                            </span>
-                                                            <button
-                                                                onClick={() => copyToClipboard(pendingInvoice.va_number!)}
-                                                                className="rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:cursor-pointer hover:bg-blue-700"
-                                                            >
-                                                                {t('course.checkout.copy', 'Salin')}
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* QR Code */}
-                                                {pendingInvoice.qr_code_url && (
-                                                    <div className="space-y-3 rounded-lg bg-purple-50 p-4 dark:bg-purple-900/20">
-                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('course.checkout.qrCode', 'Kode QR Pembayaran')}</p>
-                                                        <div className="flex justify-center rounded-lg bg-white p-4 dark:bg-gray-700">
-                                                            <img
-                                                                src={pendingInvoice.qr_code_url}
-                                                                alt="QR Code"
-                                                                className="h-48 w-48 object-contain"
-                                                            />
-                                                        </div>
-                                                        <a
-                                                            href={pendingInvoice.qr_code_url}
-                                                            download
-                                                            className="block rounded-lg bg-purple-600 px-4 py-2 text-center text-sm font-medium text-white transition-colors hover:bg-purple-700"
-                                                        >
-                                                            {t('course.checkout.downloadQr', 'Download QR Code')}
-                                                        </a>
-                                                    </div>
-                                                )}
-
-                                                {/* Instructions */}
-                                                {transactionDetail?.instructions && transactionDetail.instructions.length > 0 ? (
-                                                    <div className="space-y-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-                                                        <p className="text-sm font-semibold text-gray-900 dark:text-white">{t('course.checkout.paymentSteps', 'Langkah Pembayaran')}</p>
-                                                        <div className="space-y-4">
-                                                            {transactionDetail.instructions.map((instruction, idx) => (
-                                                                <details
-                                                                    key={idx}
-                                                                    className="group rounded-lg border border-gray-200 dark:border-gray-600"
-                                                                    open={idx === 0}
-                                                                >
-                                                                    <summary className="flex cursor-pointer items-center justify-between bg-gray-100 px-4 py-3 hover:bg-gray-200 dark:bg-gray-600 dark:hover:bg-gray-500">
-                                                                        <span className="font-semibold text-gray-900 dark:text-white">
-                                                                            {instruction.title}
-                                                                        </span>
-                                                                        <span className="text-gray-600 transition-transform group-open:rotate-180 dark:text-gray-300">
-                                                                            ▼
-                                                                        </span>
-                                                                    </summary>
-                                                                    <div className="space-y-3 bg-white px-4 py-4 dark:bg-gray-700">
-                                                                        <ol className="space-y-2">
-                                                                            {instruction.steps.map((step, stepIdx) => (
-                                                                              <li key={stepIdx} className="flex gap-3">
-                                                                                  <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-xs font-bold text-white">
-                                                                                      {stepIdx + 1}
-                                                                                  </span>
-                                                                                  <span className="flex-1 pt-0.5 text-sm text-gray-700 dark:text-gray-300">
-                                                                                      <div dangerouslySetInnerHTML={{ __html: step }} />
-                                                                                  </span>
-                                                                              </li>
-                                                                            ))}
-                                                                        </ol>
-                                                                    </div>
-                                                                </details>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                ) : null}
-                                            </>
-                                        );
-                                    })()}
-
-                                    {/* Action Buttons for Pending Invoice */}
-                                    <div className="space-y-2 pt-2">
-                                        {pendingInvoice.invoice_url && formatExpiryTime(pendingInvoice.expires_at).status !== 'expired' && (
-                                            <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold shadow-md" size="lg">
-                                                <a href={pendingInvoice.invoice_url}>
-                                                    {t('course.checkout.continuePayment', 'Lanjutkan Pembayaran')}
-                                                </a>
-                                            </Button>
-                                        )}
-
-                                        <div className="flex gap-2">
-                                            <Button onClick={() => window.location.reload()} variant="outline" className="flex-1" size="lg">
-                                                {t('course.checkout.checkStatus', 'Cek Status')}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="flex-1 text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
-                                                size="lg"
-                                                disabled={cancellingInvoice}
-                                                onClick={async () => {
-                                                    if (confirm('Apakah Anda yakin ingin membatalkan transaksi ini dan membuat pesanan baru?')) {
-                                                        setCancellingInvoice(true);
-                                                        try {
-                                                            await axios.post(route('invoice.cancel', pendingInvoice.id));
-                                                            toast.success('Pesanan berhasil dibatalkan.');
-                                                            window.location.reload();
-                                                        } catch (err: any) {
-                                                            toast.error(err.response?.data?.message || 'Gagal membatalkan pesanan.');
-                                                            setCancellingInvoice(false);
-                                                        }
-                                                    }
-                                                }}
-                                            >
-                                                {cancellingInvoice ? t('course.checkout.cancelling', 'Membatalkan...') : t('course.checkout.cancelOrder', 'Batalkan Pesanan')}
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                    }
+                                }}
+                            />
                         ) : (
-                            <div className="overflow-hidden rounded-2xl border bg-white/95 shadow-xl backdrop-blur-sm dark:bg-gray-800/95">
-                                <div className="border-b bg-gray-50/80 p-4 dark:bg-gray-900/80">
-                                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            <div className="overflow-hidden rounded-2xl border border-[#DCE3EC] bg-white shadow-sm">
+                                <div className="border-b border-[#DCE3EC] bg-[#FAF8F4] px-5 py-4">
+                                    <h2 className="font-literata text-lg font-bold text-[#12344E]">
                                         {isFree ? t('course.checkout.regDetail', 'Detail Pendaftaran') : t('course.checkout.summaryTitle', 'Ringkasan Pembayaran')}
                                     </h2>
                                 </div>
 
-                                <div className="space-y-4 p-6">
-                                    {/* Tab Pilihan Pembayaran (Full / Cicilan) */}
-                                    {((installmentTerms && installmentTerms.length > 0) || (activeInstallment && !activeInstallment.is_fully_paid)) && !isFree && (
-                                        <div className="grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1 dark:bg-gray-700">
-                                            <button
-                                                type="button"
-                                                onClick={() => setPaymentMode('full')}
-                                                disabled={!!activeInstallment && !activeInstallment.is_fully_paid}
-                                                className={`py-2 text-xs font-semibold rounded-lg transition-all ${paymentMode === 'full' ? 'bg-white text-gray-900 shadow-xs dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'} ${activeInstallment && !activeInstallment.is_fully_paid ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            >
-                                                {t('course.checkout.tabFull', 'Bayar Lunas (Full)')}
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => setPaymentMode('installment')}
-                                                className={`py-2 text-xs font-semibold rounded-lg transition-all ${paymentMode === 'installment' ? 'bg-white text-gray-900 shadow-xs dark:bg-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-900 dark:text-gray-400'}`}
-                                            >
-                                                {t('course.checkout.tabInstallment', 'Cicilan')} ({activeInstallment && !activeInstallment.is_fully_paid ? (activeInstallment.total_terms || activeInstallment.terms?.length) : installmentTerms.length}x)
-                                            </button>
-                                        </div>
-                                    )}
+                                <div className="space-y-5 p-5 sm:p-6">
+                                    {((installmentTerms && installmentTerms.length > 0) || (activeInstallment && !activeInstallment.is_fully_paid)) &&
+                                        !isFree && (
+                                            <div className="grid grid-cols-2 gap-1.5 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPaymentMode('full')}
+                                                    disabled={!!activeInstallment && !activeInstallment.is_fully_paid}
+                                                    className={`min-h-10 rounded-lg text-xs font-semibold transition-colors ${
+                                                        paymentMode === 'full'
+                                                            ? 'bg-white text-[#12344E] shadow-xs'
+                                                            : 'text-[#5B6B7F] hover:text-[#12344E]'
+                                                    } ${activeInstallment && !activeInstallment.is_fully_paid ? 'cursor-not-allowed opacity-50' : ''}`}
+                                                >
+                                                    {t('course.checkout.tabFull', 'Bayar Lunas (Full)')}
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPaymentMode('installment')}
+                                                    className={`min-h-10 rounded-lg text-xs font-semibold transition-colors ${
+                                                        paymentMode === 'installment'
+                                                            ? 'bg-white text-[#12344E] shadow-xs'
+                                                            : 'text-[#5B6B7F] hover:text-[#12344E]'
+                                                    }`}
+                                                >
+                                                    {t('course.checkout.tabInstallment', 'Cicilan')} (
+                                                    {activeInstallment && !activeInstallment.is_fully_paid
+                                                        ? activeInstallment.total_terms || activeInstallment.terms?.length
+                                                        : installmentTerms.length}
+                                                    x)
+                                                </button>
+                                            </div>
+                                        )}
 
-                                    {paymentMode === 'installment' && ((installmentTerms && installmentTerms.length > 0) || (activeInstallment && !activeInstallment.is_fully_paid)) && !isFree ? (
+                                    {paymentMode === 'installment' &&
+                                    ((installmentTerms && installmentTerms.length > 0) || (activeInstallment && !activeInstallment.is_fully_paid)) &&
+                                    !isFree ? (
                                         <InstallmentOptions
                                             productType="course"
                                             productId={course.id}
@@ -860,7 +663,9 @@ export default function CheckoutCourse({
                                                     return false;
                                                 }
                                                 if (!isLoggedIn) {
-                                                    toast.error(t('course.checkout.loginRequiredDesc', 'Silakan login terlebih dahulu untuk melanjutkan checkout kelas'));
+                                                    toast.error(
+                                                        t('course.checkout.loginRequiredDesc', 'Silakan login terlebih dahulu untuk melanjutkan checkout kelas'),
+                                                    );
                                                     window.location.href = route('login', { redirect: window.location.href });
                                                     return false;
                                                 }
@@ -873,299 +678,388 @@ export default function CheckoutCourse({
                                             }}
                                         />
                                     ) : (
-                                        <form onSubmit={handleCheckout} className="space-y-4">
+                                        <form onSubmit={handleCheckout} className="space-y-5">
                                             {isFree ? (
-                                                <div className="rounded-lg bg-green-50 p-6 text-center dark:bg-green-900/20">
-                                                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{t('course.checkout.freeCourse', 'KELAS GRATIS')}</p>
-                                                    <p className="mt-2 text-sm text-green-700 dark:text-green-300">{t('course.checkout.freeCourseDesc', 'Dapatkan akses penuh secara gratis')}</p>
+                                                <div className="rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-5 text-center">
+                                                    <p className="font-literata text-xl font-bold text-[#15803D]">
+                                                        {t('course.checkout.freeCourse', 'KELAS GRATIS')}
+                                                    </p>
+                                                    <p className="mt-1.5 text-sm text-[#166534]">
+                                                        {t('course.checkout.freeCourseDesc', 'Dapatkan akses penuh secara gratis')}
+                                                    </p>
                                                 </div>
                                             ) : (
-                                            <>
-                                                {/* Pilihan Jenis Kode */}
-                                                <div className="space-y-2">
-                                                    <Label className="text-sm font-medium">{t('course.checkout.codeType', 'Jenis Kode')}</Label>
-                                                    <RadioGroup
-                                                        value={codeType}
-                                                        onValueChange={(val: 'voucher' | 'referral') => {
-                                                            setCodeType(val);
-                                                            setPromoCode('');
-                                                            setDiscountData(null);
-                                                            setReferralData(null);
-                                                            setPromoError('');
-                                                            setReferralError('');
-                                                            if (val === 'voucher') {
-                                                                setPointsChecked(false);
-                                                                setPointsToUse(0);
-                                                            }
-                                                        }}
-                                                        className="flex gap-4"
-                                                    >
-                                                        <div className="flex items-center space-x-2">
-                                                            <RadioGroupItem value="voucher" id="code-voucher" />
-                                                            <Label htmlFor="code-voucher" className="cursor-pointer text-sm">{t('course.checkout.voucher', 'Voucher')}</Label>
-                                                        </div>
-                                                        <div className="flex items-center space-x-2">
-                                                            <RadioGroupItem value="referral" id="code-referral" />
-                                                            <Label htmlFor="code-referral" className="cursor-pointer text-sm">{t('course.checkout.referral', 'Referral')}</Label>
-                                                        </div>
-                                                    </RadioGroup>
-                                                </div>
-
-                                                {/* Input Kode */}
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="promo-code" className="text-sm font-medium">
-                                                        {codeType === 'voucher' ? t('course.checkout.voucherCode', 'Kode Voucher / Promo') : t('course.checkout.referralCode', 'Kode Referral')}
-                                                    </Label>
-                                                    <div className="relative">
-                                                        <Input
-                                                            id="promo-code"
-                                                            type="text"
-                                                            placeholder={codeType === 'voucher' ? t('course.checkout.enterPromo', 'Masukkan kode promo') : t('course.checkout.enterReferral', 'Masukkan kode referral')}
-                                                            value={promoCode}
-                                                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                                                            className="pr-10"
-                                                        />
-                                                        {(promoLoading || referralLoading) && (
-                                                            <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
-                                                                <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-orange-600"></div>
-                                                            </div>
-                                                        )}
-                                                        {!(promoLoading || referralLoading) && promoCode && (
-                                                            <div className="absolute top-1/2 right-3 -translate-y-1/2 transform">
-                                                                {codeType === 'voucher' ? (
-                                                                    discountData?.valid ? (
-                                                                        <Check className="h-5 w-5 text-green-600" />
-                                                                    ) : promoError ? (
-                                                                        <X className="h-5 w-5 text-red-600" />
-                                                                    ) : null
-                                                                ) : (
-                                                                    referralData?.valid ? (
-                                                                        <Check className="h-5 w-5 text-green-600" />
-                                                                    ) : referralError ? (
-                                                                        <X className="h-5 w-5 text-red-600" />
-                                                                    ) : null
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    {codeType === 'voucher' && promoError && (
-                                                        <p className="text-sm text-red-600">{promoError}</p>
-                                                    )}
-                                                    {codeType === 'voucher' && discountData?.valid && (
-                                                        <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
-                                                            <div className="flex items-center gap-2">
-                                                                <Check className="h-4 w-4 text-green-600" />
-                                                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                                                    Promo "{discountData.discount_code.code}" diterapkan!
-                                                                </p>
-                                                            </div>
-                                                            <p className="mt-1 text-xs text-green-600 dark:text-green-300">
-                                                                {discountData.discount_code.name}
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    {codeType === 'referral' && referralError && (
-                                                        <p className="text-sm text-red-600">{referralError}</p>
-                                                    )}
-                                                    {codeType === 'referral' && referralData?.valid && (
-                                                        <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
-                                                            <div className="flex items-center gap-2">
-                                                                <Check className="h-4 w-4 text-green-600" />
-                                                                <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                                                    Kode referral valid!
-                                                                </p>
-                                                            </div>
-                                                            <p className="mt-1 text-xs text-green-600 dark:text-green-300">
-                                                                Pembelian pertama Anda dirujuk oleh {referralData.referrer?.name}. Reward poin akan masuk setelah pembayaran sukses.
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                {/* Point Reward/Redeem Section */}
-                                                {isLoggedIn && userPoints > 0 && (
-                                                    <div className="space-y-4 rounded-lg border p-4">
-                                                        <div className="flex items-center justify-between">
-                                                            <div className="space-y-0.5">
-                                                                <Label className="text-base font-semibold">{t('course.checkout.usePoints', 'Gunakan Reward Point')}</Label>
-                                                                <p className="text-muted-foreground text-xs">
-                                                                    Anda memiliki {userPoints.toLocaleString('id-ID')} poin (Rp {userPoints.toLocaleString('id-ID')})
-                                                                </p>
-                                                            </div>
-                                                            <Switch
-                                                                checked={pointsChecked}
-                                                                disabled={codeType === 'voucher' && !!discountData?.valid}
-                                                                onCheckedChange={(checked) => {
-                                                                    setPointsChecked(checked);
-                                                                    if (checked) {
-                                                                        const autoPoints = Math.min(userPoints, maxPointsAllowed);
-                                                                        setPointsToUse(autoPoints);
-                                                                        setPointsError('');
-                                                                    } else {
-                                                                        setPointsToUse(0);
-                                                                        setPointsError('');
-                                                                    }
-                                                                }}
-                                                            />
-                                                        </div>
-
-                                                        {pointsChecked && (
-                                                            <div className="space-y-2">
-                                                                <Label htmlFor="points-input" className="text-sm">{t('course.checkout.pointsToUse', 'Jumlah poin yang digunakan')}</Label>
-                                                                <div className="flex items-center gap-2">
-                                                                    <Input
-                                                                        id="points-input"
-                                                                        type="number"
-                                                                        max={Math.min(userPoints, maxPointsAllowed)}
-                                                                        min={1}
-                                                                        value={pointsToUse || ''}
-                                                                        onChange={(e) => {
-                                                                            const val = parseInt(e.target.value) || 0;
-                                                                            if (val > userPoints) {
-                                                                                setPointsError('Poin melebihi saldo Anda.');
-                                                                            } else if (val > maxPointsAllowed) {
-                                                                                setPointsError(`Maksimal poin yang dapat digunakan adalah ${maxPointsAllowed}.`);
-                                                                            } else {
-                                                                                setPointsError('');
+                                                <>
+                                                    {/* Collapsible Voucher / Referral */}
+                                                    <Collapsible open={promoOpen || promoApplied} onOpenChange={setPromoOpen}>
+                                                        <CollapsibleTrigger asChild>
+                                                            <button
+                                                                type="button"
+                                                                className="flex min-h-11 w-full items-center justify-between rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] px-4 py-2.5 text-left text-sm font-semibold text-[#12344E] transition-colors hover:border-[#93C5FD]"
+                                                            >
+                                                                <span className="flex items-center gap-2">
+                                                                    <Tag className="h-4 w-4 text-[#1976D3]" />
+                                                                    <span>
+                                                                        {t('webinar.register.havePromoCode', 'Punya kode voucher atau referral?')}
+                                                                    </span>
+                                                                    {promoApplied && (
+                                                                        <span className="rounded-full bg-[#DCFCE7] px-2 py-0.5 text-[11px] font-semibold text-[#15803D]">
+                                                                            {t('webinar.register.codeAppliedTag', 'Aktif')}
+                                                                        </span>
+                                                                    )}
+                                                                </span>
+                                                                <ChevronDown
+                                                                    className={`h-4 w-4 text-[#5B6B7F] transition-transform ${
+                                                                        promoOpen || promoApplied ? 'rotate-180' : ''
+                                                                    }`}
+                                                                />
+                                                            </button>
+                                                        </CollapsibleTrigger>
+                                                        <CollapsibleContent className="pt-3">
+                                                            <div className="space-y-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                                                <div className="space-y-1.5">
+                                                                    <Label className="text-xs font-semibold uppercase tracking-wide text-[#5B6B7F]">
+                                                                        {t('course.checkout.codeType', 'Jenis Kode')}
+                                                                    </Label>
+                                                                    <RadioGroup
+                                                                        value={codeType}
+                                                                        onValueChange={(val: 'voucher' | 'referral') => {
+                                                                            setCodeType(val);
+                                                                            setPromoCode('');
+                                                                            setDiscountData(null);
+                                                                            setReferralData(null);
+                                                                            setPromoError('');
+                                                                            setReferralError('');
+                                                                            if (val === 'voucher') {
+                                                                                setPointsChecked(false);
+                                                                                setPointsToUse(0);
                                                                             }
-                                                                            setPointsToUse(val);
                                                                         }}
-                                                                    />
-                                                                    <Button
-                                                                        type="button"
-                                                                        variant="outline"
-                                                                        size="sm"
-                                                                        onClick={() => {
-                                                                            setPointsToUse(Math.min(userPoints, maxPointsAllowed));
-                                                                            setPointsError('');
-                                                                        }}
+                                                                        className="flex gap-5 pt-1"
                                                                     >
-                                                                        {t('course.checkout.maxPoints', 'Maksimal')}
-                                                                    </Button>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="voucher" id="code-voucher" />
+                                                                            <Label htmlFor="code-voucher" className="cursor-pointer text-sm text-[#162230]">
+                                                                                {t('course.checkout.voucher', 'Voucher')}
+                                                                            </Label>
+                                                                        </div>
+                                                                        <div className="flex items-center space-x-2">
+                                                                            <RadioGroupItem value="referral" id="code-referral" />
+                                                                            <Label htmlFor="code-referral" className="cursor-pointer text-sm text-[#162230]">
+                                                                                {t('course.checkout.referral', 'Referral')}
+                                                                            </Label>
+                                                                        </div>
+                                                                    </RadioGroup>
                                                                 </div>
-                                                                {pointsError && <p className="text-xs text-red-600">{pointsError}</p>}
-                                                                {codeType === 'voucher' && !!discountData?.valid && (
-                                                                    <p className="text-xs text-amber-600">{t('course.checkout.pointsConflict', 'Poin tidak dapat digunakan bersamaan dengan kode voucher.')}</p>
-                                                                )}
+
+                                                                <div className="space-y-1.5">
+                                                                    <Label htmlFor="promo-code" className="text-xs font-semibold text-[#162230]">
+                                                                        {codeType === 'voucher'
+                                                                            ? t('course.checkout.voucherCode', 'Kode Voucher / Promo')
+                                                                            : t('course.checkout.referralCode', 'Kode Referral')}
+                                                                    </Label>
+                                                                    <div className="relative">
+                                                                        <Input
+                                                                            id="promo-code"
+                                                                            type="text"
+                                                                            placeholder={
+                                                                                codeType === 'voucher'
+                                                                                    ? t('course.checkout.enterPromo', 'Masukkan kode promo')
+                                                                                    : t('course.checkout.enterReferral', 'Masukkan kode referral')
+                                                                            }
+                                                                            value={promoCode}
+                                                                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                                                            className="pr-10"
+                                                                        />
+                                                                        {(promoLoading || referralLoading) && (
+                                                                            <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                                                <LoaderCircle className="h-4 w-4 animate-spin text-[#1976D3]" />
+                                                                            </div>
+                                                                        )}
+                                                                        {!(promoLoading || referralLoading) && promoCode && (
+                                                                            <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                                                {codeType === 'voucher' ? (
+                                                                                    discountData?.valid ? (
+                                                                                        <Check className="h-5 w-5 text-[#15803D]" />
+                                                                                    ) : promoError ? (
+                                                                                        <X className="h-5 w-5 text-[#B91C1C]" />
+                                                                                    ) : null
+                                                                                ) : referralData?.valid ? (
+                                                                                    <Check className="h-5 w-5 text-[#15803D]" />
+                                                                                ) : referralError ? (
+                                                                                    <X className="h-5 w-5 text-[#B91C1C]" />
+                                                                                ) : null}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    {codeType === 'voucher' && promoError && (
+                                                                        <p className="text-xs font-medium text-[#B91C1C]">{promoError}</p>
+                                                                    )}
+                                                                    {codeType === 'voucher' && discountData?.valid && (
+                                                                        <div className="rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] p-3">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Check className="h-4 w-4 text-[#15803D]" />
+                                                                                <p className="text-xs font-semibold text-[#15803D]">
+                                                                                    Promo "{discountData.discount_code.code}" diterapkan!
+                                                                                </p>
+                                                                            </div>
+                                                                            <p className="mt-1 text-xs text-[#166534]">
+                                                                                {discountData.discount_code.name}
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                    {codeType === 'referral' && referralError && (
+                                                                        <p className="text-xs font-medium text-[#B91C1C]">{referralError}</p>
+                                                                    )}
+                                                                    {codeType === 'referral' && referralData?.valid && (
+                                                                        <div className="rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] p-3">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Check className="h-4 w-4 text-[#15803D]" />
+                                                                                <p className="text-xs font-semibold text-[#15803D]">Kode referral valid!</p>
+                                                                            </div>
+                                                                            <p className="mt-1 text-xs text-[#166534]">
+                                                                                Pembelian pertama Anda dirujuk oleh {referralData.referrer?.name}. Reward poin
+                                                                                akan masuk setelah pembayaran sukses.
+                                                                            </p>
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </CollapsibleContent>
+                                                    </Collapsible>
+
+                                                    {/* Point Reward/Redeem Section */}
+                                                    {isLoggedIn && userPoints > 0 && (
+                                                        <div className="space-y-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                                            <div className="flex items-center justify-between gap-3">
+                                                                <div className="space-y-0.5">
+                                                                    <Label className="text-sm font-semibold text-[#12344E]">
+                                                                        {t('course.checkout.usePoints', 'Gunakan Reward Point')}
+                                                                    </Label>
+                                                                    <p className="text-xs text-[#475569]">
+                                                                        Anda memiliki {userPoints.toLocaleString('id-ID')} poin (Rp{' '}
+                                                                        {userPoints.toLocaleString('id-ID')})
+                                                                    </p>
+                                                                </div>
+                                                                <Switch
+                                                                    checked={pointsChecked}
+                                                                    disabled={codeType === 'voucher' && !!discountData?.valid}
+                                                                    onCheckedChange={(checked) => {
+                                                                        setPointsChecked(checked);
+                                                                        if (checked) {
+                                                                            const autoPoints = Math.min(userPoints, maxPointsAllowed);
+                                                                            setPointsToUse(autoPoints);
+                                                                            setPointsError('');
+                                                                        } else {
+                                                                            setPointsToUse(0);
+                                                                            setPointsError('');
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </div>
+
+                                                            {pointsChecked && (
+                                                                <div className="space-y-2 pt-1">
+                                                                    <Label htmlFor="points-input" className="text-xs font-medium text-[#475569]">
+                                                                        {t('course.checkout.pointsToUse', 'Jumlah poin yang digunakan')}
+                                                                    </Label>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Input
+                                                                            id="points-input"
+                                                                            type="number"
+                                                                            max={Math.min(userPoints, maxPointsAllowed)}
+                                                                            min={1}
+                                                                            value={pointsToUse || ''}
+                                                                            onChange={(e) => {
+                                                                                const val = parseInt(e.target.value) || 0;
+                                                                                if (val > userPoints) {
+                                                                                    setPointsError('Poin melebihi saldo Anda.');
+                                                                                } else if (val > maxPointsAllowed) {
+                                                                                    setPointsError(
+                                                                                        `Maksimal poin yang dapat digunakan adalah ${maxPointsAllowed}.`,
+                                                                                    );
+                                                                                } else {
+                                                                                    setPointsError('');
+                                                                                }
+                                                                                setPointsToUse(val);
+                                                                            }}
+                                                                        />
+                                                                        <Button
+                                                                            type="button"
+                                                                            variant="outline"
+                                                                            size="sm"
+                                                                            className="h-11 shrink-0"
+                                                                            onClick={() => {
+                                                                                setPointsToUse(Math.min(userPoints, maxPointsAllowed));
+                                                                                setPointsError('');
+                                                                            }}
+                                                                        >
+                                                                            {t('course.checkout.maxPoints', 'Maksimal')}
+                                                                        </Button>
+                                                                    </div>
+                                                                    {pointsError && <p className="text-xs font-medium text-[#B91C1C]">{pointsError}</p>}
+                                                                    {codeType === 'voucher' && !!discountData?.valid && (
+                                                                        <p className="text-xs text-[#A16207]">
+                                                                            {t(
+                                                                                'course.checkout.pointsConflict',
+                                                                                'Poin tidak dapat digunakan bersamaan dengan kode voucher.',
+                                                                            )}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    {/* Price Breakdown */}
+                                                    <div className="space-y-2.5 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-4">
+                                                        {course.strikethrough_price > 0 && (
+                                                            <>
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-[#475569]">
+                                                                        {t('course.checkout.originalPrice', 'Harga Asli')}
+                                                                    </span>
+                                                                    <span className="text-[#5B6B7F] line-through tabular-nums">
+                                                                        Rp {course.strikethrough_price.toLocaleString('id-ID')}
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex items-center justify-between text-sm">
+                                                                    <span className="text-[#475569]">
+                                                                        {t('course.checkout.discount', 'Diskon')}
+                                                                    </span>
+                                                                    <span className="font-semibold text-[#15803D] tabular-nums">
+                                                                        -Rp {(course.strikethrough_price - course.price).toLocaleString('id-ID')}
+                                                                    </span>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                        <div className="flex items-center justify-between text-sm">
+                                                            <span className="text-[#475569]">
+                                                                {t('course.checkout.coursePrice', 'Harga Kelas')}
+                                                            </span>
+                                                            <span className="font-semibold text-[#162230] tabular-nums">
+                                                                Rp {course.price.toLocaleString('id-ID')}
+                                                            </span>
+                                                        </div>
+
+                                                        {discountData?.valid && codeType === 'voucher' && (
+                                                            <div className="flex items-center justify-between text-sm">
+                                                                <span className="text-[#475569]">
+                                                                    {t('course.checkout.promoDiscount', 'Diskon Promo')} ({discountData.discount_code.code})
+                                                                </span>
+                                                                <span className="font-semibold text-[#15803D] tabular-nums">
+                                                                    -Rp {discountData.discount_amount.toLocaleString('id-ID')}
+                                                                </span>
                                                             </div>
                                                         )}
-                                                    </div>
-                                                )}
 
-                                                <Separator />
-
-                                                {/* Price Breakdown */}
-                                                <div className="space-y-3">
-                                                    {course.strikethrough_price > 0 && (
-                                                        <>
+                                                        {pointsChecked && pointsToUse > 0 && !pointsError && (
                                                             <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-600 dark:text-gray-400">{t('course.checkout.originalPrice', 'Harga Asli')}</span>
-                                                                <span className="font-medium text-gray-500 line-through dark:text-gray-400">
-                                                                    Rp {course.strikethrough_price.toLocaleString('id-ID')}
+                                                                <span className="text-[#475569]">
+                                                                    {t('course.checkout.pointsDiscount', 'Potongan Poin')}
+                                                                </span>
+                                                                <span className="font-semibold text-[#15803D] tabular-nums">
+                                                                    -Rp {pointsToUse.toLocaleString('id-ID')}
                                                                 </span>
                                                             </div>
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-600 dark:text-gray-400">{t('course.checkout.discount', 'Diskon')}</span>
-                                                                <span className="font-semibold text-red-600">
-                                                                    -Rp {(course.strikethrough_price - course.price).toLocaleString('id-ID')}
-                                                                </span>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-gray-600 dark:text-gray-400">{t('course.checkout.coursePrice', 'Harga Kelas')}</span>
-                                                        <span className="font-semibold text-gray-900 dark:text-white">
-                                                            Rp {course.price.toLocaleString('id-ID')}
-                                                        </span>
-                                                    </div>
+                                                        )}
 
-                                                    {discountData?.valid && codeType === 'voucher' && (
                                                         <div className="flex items-center justify-between text-sm">
-                                                            <span className="text-gray-600 dark:text-gray-400">
-                                                                {t('course.checkout.promoDiscount', 'Diskon Promo')} ({discountData.discount_code.code})
+                                                            <span className="text-[#475569]">
+                                                                {t('course.checkout.adminFee', 'Biaya Transaksi')}
                                                             </span>
-                                                            <span className="font-semibold text-green-600">
-                                                                -Rp {discountData.discount_amount.toLocaleString('id-ID')}
+                                                            <span className="font-medium text-[#162230] tabular-nums">
+                                                                Rp {adminFee.toLocaleString('id-ID')}
                                                             </span>
                                                         </div>
-                                                    )}
 
-                                                    {/* Points Discount */}
-                                                    {pointsChecked && pointsToUse > 0 && !pointsError && (
-                                                        <div className="flex items-center justify-between text-sm">
-                                                            <span className="text-gray-600 dark:text-gray-400">{t('course.checkout.pointsDiscount', 'Potongan Poin')}</span>
-                                                            <span className="font-semibold text-green-600">
-                                                                -Rp {pointsToUse.toLocaleString('id-ID')}
+                                                        <Separator className="bg-[#DCE3EC]" />
+
+                                                        <div className="flex items-center justify-between pt-1">
+                                                            <span className="font-semibold text-[#12344E]">
+                                                                {t('course.checkout.totalPayment', 'Total Pembayaran')}
+                                                            </span>
+                                                            <span className="font-literata text-2xl font-bold text-[#12344E] tabular-nums">
+                                                                Rp {totalPrice.toLocaleString('id-ID')}
                                                             </span>
                                                         </div>
-                                                    )}
-
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-gray-600 dark:text-gray-400">{t('course.checkout.adminFee', 'Biaya Transaksi')}</span>
-                                                        <span className="font-medium text-gray-900 dark:text-white">
-                                                            Rp {adminFee.toLocaleString('id-ID')}
-                                                        </span>
                                                     </div>
+                                                </>
+                                            )}
 
-                                                    <Separator />
-
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-semibold text-gray-900 dark:text-white">{t('course.checkout.totalPayment', 'Total Pembayaran')}</span>
-                                                        <span className="text-2xl font-bold text-orange-600">
-                                                            Rp {totalPrice.toLocaleString('id-ID')}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-
-                                        {!isFree && (
-                                            <>
-                                                <Separator />
-                                                <div className="flex items-start gap-3">
+                                            {!isFree && (
+                                                <div className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-3.5">
                                                     <Checkbox
                                                         id="terms"
                                                         checked={termsAccepted}
                                                         onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                                                        className="mt-1"
+                                                        className="mt-0.5"
                                                     />
-                                                    <Label htmlFor="terms" className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                                                    <Label htmlFor="terms" className="cursor-pointer text-xs leading-relaxed text-[#475569] sm:text-sm">
                                                         {t('course.checkout.agreeTerms', 'Saya menyetujui')}{' '}
                                                         <a
                                                             href="/terms-and-conditions"
                                                             target="_blank"
-                                                            className="font-medium text-orange-600 hover:underline"
+                                                            rel="noopener noreferrer"
+                                                            className="font-semibold text-[#1976D3] hover:underline"
                                                         >
                                                             {t('course.checkout.termsAndConditions', 'syarat dan ketentuan')}
                                                         </a>{' '}
                                                         {t('course.checkout.applicable', 'yang berlaku')}
                                                     </Label>
                                                 </div>
-                                            </>
-                                        )}
-
-                                        <Button className="w-full" type="submit" disabled={(isFree ? false : !termsAccepted) || loading || !!activeInstallment} size="lg">
-                                            {loading ? (
-                                                <span className="flex items-center gap-2">
-                                                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-white"></div>
-                                                    {t('course.checkout.processing', 'Memproses...')}
-                                                </span>
-                                            ) : isFree ? (
-                                                t('course.checkout.btnGetFree', 'Dapatkan Akses Gratis')
-                                            ) : (
-                                                t('course.checkout.btnPayNow', 'Bayar Sekarang')
                                             )}
-                                        </Button>
 
-                                        <p className="text-center text-xs text-gray-500 dark:text-gray-400">{t('course.checkout.securePayment', 'Pembayaran aman dan terenkripsi 🔒')}</p>
-                                    </form>
-                                )}
+                                            <div className="space-y-2">
+                                                <Button
+                                                    className="h-12 w-full text-base font-semibold"
+                                                    type="submit"
+                                                    disabled={(isFree ? false : !termsAccepted) || loading || !!activeInstallment}
+                                                    size="lg"
+                                                >
+                                                    {loading ? (
+                                                        <span className="flex items-center gap-2">
+                                                            <LoaderCircle className="h-4 w-4 animate-spin" />
+                                                            {t('course.checkout.processing', 'Memproses...')}
+                                                        </span>
+                                                    ) : isFree ? (
+                                                        t('course.checkout.btnGetFree', 'Dapatkan Akses Gratis')
+                                                    ) : (
+                                                        t('course.checkout.btnPayNow', 'Bayar Sekarang')
+                                                    )}
+                                                </Button>
+
+                                                {showDisabledReason && (
+                                                    <p className="text-center text-xs text-[#5B6B7F]">
+                                                        {t(
+                                                            'webinar.register.disabledTermsHint',
+                                                            'Centang persetujuan syarat dan ketentuan di atas untuk mengaktifkan tombol bayar.',
+                                                        )}
+                                                    </p>
+                                                )}
+
+                                                {!!activeInstallment && !isFree && (
+                                                    <p className="text-center text-xs text-[#A16207]">
+                                                        {t(
+                                                            'webinar.register.disabledInstallmentHint',
+                                                            'Anda memiliki cicilan aktif. Gunakan tab Cicilan di atas untuk membayar termin berikutnya.',
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center justify-center gap-1.5 text-xs text-[#5B6B7F]">
+                                                <Shield className="h-3.5 w-3.5 text-[#15803D]" />
+                                                <span>{t('course.checkout.securePayment', 'Pembayaran aman dan terenkripsi SSL')}</span>
+                                            </div>
+                                        </form>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    )}
+                        )}
                     </div>
                 </div>
-            </section>
+            </main>
             <Toaster position="top-center" richColors />
         </div>
     );

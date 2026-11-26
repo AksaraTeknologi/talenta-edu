@@ -1,14 +1,15 @@
+import { EASE_OUT_EXPO, ScrollProgressBar } from '@/components/home-motion';
 import PromotionPopup from '@/components/promotion-popup';
 import UserLayout from '@/layouts/user-layout';
 import { Head } from '@inertiajs/react';
+import { motion, MotionConfig } from 'motion/react';
 import { useEffect } from 'react';
-import AboutSection from './about-section';
+import { useTranslation } from 'react-i18next';
 import CarouselSection from './carousel-section';
 import FaqSection from './faq-section';
 import LatestProductsSection from './latest-products-section';
 import MentorSection from './mentor-section';
 import TestimonySection from './testimony-section';
-import { useTranslation } from 'react-i18next';
 
 interface Tool {
     id: string;
@@ -34,6 +35,8 @@ interface Product {
     end_date?: string;
     start_time?: string;
     registration_deadline?: string;
+    socialization_registration_deadline?: string;
+    program_type?: 'regular' | 'scholarship';
     duration_days?: number;
     bundle_url?: string;
     category?: Category;
@@ -95,26 +98,32 @@ export default function Home({ latestProducts, myProductIds, activePromotion, re
         <UserLayout>
             <Head title={t('common:nav.home', 'Beranda')} />
 
-            {activePromotion && <PromotionPopup promotion={activePromotion} suppressDuration={3} />}
+            <MotionConfig reducedMotion="user">
+                <ScrollProgressBar />
 
-            <CarouselSection />
-            <AboutSection />
-            <LatestProductsSection latestProducts={latestProducts} myProductIds={myProductIds} />
-            <TestimonySection />
-            <MentorSection />
-            <FaqSection />
+                {activePromotion && <PromotionPopup promotion={activePromotion} suppressDuration={3} />}
 
-            {/* {typeof window !== 'undefined' && window.innerWidth >= 1024 && <FakeNotifications products={allProducts} />} */}
+                <CarouselSection />
+                <LatestProductsSection latestProducts={latestProducts} myProductIds={myProductIds} />
+                <MentorSection />
+                <TestimonySection />
+                <FaqSection />
 
-            <a
-                href="https://wa.me/+6285606391730?text=Halo%20Admin%20Talenta,%20saya%20ingin%20bertanya%20tentang%20kelas%20online."
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:bg-primary fixed right-4 bottom-28 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 shadow-lg transition duration-500 md:right-8 md:bottom-10 md:h-14 md:w-14 lg:right-10 lg:bottom-6 lg:h-16 lg:w-16"
-                aria-label="Chat WhatsApp"
-            >
-                <img src="/assets/images/wa-icon.webp" alt="WhatsApp" className="h-8 w-8 md:h-10 md:w-10 lg:h-12 lg:w-12" />
-            </a>
+                <motion.a
+                    href="https://wa.me/+6285606391730?text=Halo%20Admin%20Talenta,%20saya%20ingin%20bertanya%20tentang%20kelas%20online."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    initial={{ opacity: 0, scale: 0.85, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ delay: 0.55, duration: 0.45, ease: EASE_OUT_EXPO }}
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.94 }}
+                    className="fixed right-4 bottom-24 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-[#DCE3EC] bg-white shadow-md transition-colors hover:bg-[#EAF3FC] md:right-8 md:h-14 md:w-14 lg:right-8 lg:bottom-6"
+                    aria-label="Chat WhatsApp"
+                >
+                    <img src="/assets/images/wa-icon.webp" alt="WhatsApp" className="h-7 w-7 md:h-8 md:w-8" />
+                </motion.a>
+            </MotionConfig>
         </UserLayout>
     );
 }

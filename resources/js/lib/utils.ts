@@ -86,3 +86,61 @@ export function parseList(items?: string | null): string[] {
         .map((s) => s.replace(/^[-*•–—\u2022]+\s+/, '').trim())
         .filter((s) => s.length > 0);
 }
+
+/**
+ * Resolve stored asset paths (e.g. `avatars/mentors/x.png` -> `/storage/avatars/mentors/x.png`)
+ * while preserving absolute URLs, root-relative `/assets/...` paths, and data URIs.
+ */
+export function resolveStorageUrl(path?: string | null): string | undefined {
+    if (!path) return undefined;
+    const trimmed = path.trim();
+    if (!trimmed) return undefined;
+    if (/^(https?:\/\/|\/|data:)/i.test(trimmed)) {
+        return trimmed;
+    }
+    return `/storage/${trimmed.replace(/^\/+/, '')}`;
+}
+
+/**
+ * Calculate integer discount percentage when strikethrough price exceeds actual price.
+ */
+export function calculateDiscountPercent(strikethroughPrice?: number | null, price?: number | null): number {
+    const original = Number(strikethroughPrice ?? 0);
+    const current = Number(price ?? 0);
+    if (original <= 0 || current < 0 || original <= current) {
+        return 0;
+    }
+    return Math.round(((original - current) / original) * 100);
+}
+
+/**
+ * Format a date string or Date object into readable Indonesian ("13 Desember 2026") or English ("13 December 2026").
+ */
+export function formatIndonesianDate(dateInput?: string | Date | null, lang = 'id'): string {
+    if (!dateInput) return '-';
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) return '-';
+    const locale = lang.startsWith('en') ? 'en-US' : 'id-ID';
+    return date.toLocaleDateString(locale, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    });
+}
+
+/**
+ * Format a date-time string or Date object into Indonesian WIB ("19.00 WIB") or English ("19:00 WIB").
+ */
+export function formatIndonesianTime(dateInput?: string | Date | null, lang = 'id'): string {
+    if (!dateInput) return '-';
+    const date = dateInput instanceof Date ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) return '-';
+    const parts = new Intl.DateTimeFormat('en-GB', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Jakarta',
+    }).format(date);
+    const formatted = lang.startsWith('en') ? parts : parts.replace(':', '.');
+    return `${formatted} WIB`;
+}

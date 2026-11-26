@@ -1,6 +1,9 @@
+import { EASE_OUT_EXPO, Reveal } from '@/components/home-motion';
 import { Button } from '@/components/ui/button';
-import { Carousel, CarouselContent, CarouselItem, useCarousel } from '@/components/ui/carousel';
+import { useInitials } from '@/hooks/use-initials';
+import { cn } from '@/lib/utils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -80,123 +83,155 @@ const testimonials: Testimonial[] = [
     },
 ];
 
-function TestimonyCard({ testimonial, isCenter }: { testimonial: Testimonial; isCenter: boolean }) {
-    if (!testimonial) return null;
+function TestimonyAvatar({ testimonial, className }: { testimonial: Testimonial; className?: string }) {
+    const getInitials = useInitials();
+    const [failed, setFailed] = useState(false);
+
+    if (failed) {
+        return (
+            <span
+                className={cn('flex shrink-0 items-center justify-center rounded-full bg-[#EAF3FC] font-semibold text-[#12344E]', className)}
+                aria-hidden="true"
+            >
+                {getInitials(testimonial.name)}
+            </span>
+        );
+    }
 
     return (
-        <div className={`flex flex-col rounded-3xl bg-white ${isCenter ? 'p-8 shadow-xl' : 'p-6 shadow-md'} h-full`} >
-            <div className={`${isCenter ? 'mb-6' : 'mb-4'} flex items-start gap-4`}>
-                <img
-                    src={testimonial.image}
-                    alt={testimonial.name}
-                    className={`${isCenter ? 'h-16 w-16 ring-4 ring-blue-100' : 'h-14 w-14'} shrink-0 rounded-full object-cover`}
-                    onError={(e) => {
-                        e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(testimonial.name)}&background=random`;
-                    }}
-                />
-                <div>
-                    <h3 className={`${isCenter ? 'text-xl' : 'text-base'} font-bold text-gray-900`}>{testimonial.name}</h3>
-                    <p className="text-sm text-gray-600">{testimonial.role}</p>
-                </div>
-            </div>
-            <p className={`overflow-hidden ${isCenter ? 'text-base' : 'text-sm'} leading-relaxed text-gray-700 line-clamp-9`}>{testimonial.text}</p>
-        </div>
+        <img
+            src={testimonial.image}
+            alt=""
+            loading="lazy"
+            onError={() => setFailed(true)}
+            className={cn('shrink-0 rounded-full border border-[#DCE3EC] object-cover', className)}
+        />
     );
 }
 
-function TestimonyCarousel() {
-    const { index, setIndex, itemsCount } = useCarousel();
-
-    const getPrevIndex = () => {
-        const totalItems = itemsCount || testimonials.length;
-        return (index - 1 + totalItems) % totalItems;
-    };
-
-    const getNextIndex = () => {
-        const totalItems = itemsCount || testimonials.length;
-        return (index + 1) % totalItems;
-    };
-
-    const validIndex = Math.min(Math.max(index, 0), testimonials.length - 1);
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setIndex(getNextIndex());
-        }, 5000);
-        return () => clearInterval(interval);
-    }, [index, setIndex]);
-
-    return (
-        <div className="relative">
-            <div className="flex items-center justify-center gap-2 md:gap-6 px-2">
-                {/* Left Arrow */}
-                <Button
-                    onClick={() => setIndex(getPrevIndex())}
-                    variant="ghost"
-                    size="icon"
-                    className="z-10 h-12 w-12 shrink-0 rounded-full bg-blue-600 text-white shadow-lg transition-all hover:scale-110 hover:bg-blue-700 hover:text-white"
-                >
-                    <ChevronLeft className="h-7 w-7" />
-                </Button>
-
-                {/* Testimonial Cards */}
-                <div className="relative w-full max-w-6xl overflow-hidden">
-                    <div className="flex flex-col md:grid md:grid-cols-3 gap-4 md:gap-6 py-8 md:py-16">
-                        {/* Left card (blurred) */}
-                        <div className="hidden md:block blur-[2px] opacity-50 h-[400px]">
-                            <TestimonyCard testimonial={testimonials[getPrevIndex()]} isCenter={false} />
-                        </div>
-                        {/* Center card (active) */}
-                        <div className="h-[400px] scale-105">
-                            <TestimonyCard testimonial={testimonials[validIndex]} isCenter={true} />
-                        </div>
-                        {/* Right card (blurred) */}
-                        <div className="hidden md:block blur-[2px] opacity-50 h-[400px]">
-                            <TestimonyCard testimonial={testimonials[getNextIndex()]} isCenter={false} />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Arrow */}
-                <Button
-                    onClick={() => setIndex(getNextIndex())}
-                    variant="ghost"
-                    size="icon"
-                    className="z-10 h-12 w-12 shrink-0 rounded-full bg-blue-600 text-white shadow-lg transition-all hover:scale-110 hover:bg-blue-700 hover:text-white"
-                >
-                    <ChevronRight className="h-7 w-7" />
-                </Button>
-            </div>
-        </div>
-    );
-}
+const AUTOPLAY_MS = 7000;
 
 export default function TestimonySection() {
     const { t } = useTranslation('home');
-    const [carouselIndex, setCarouselIndex] = useState(0);
+    const prefersReducedMotion = useReducedMotion();
+    const [active, setActive] = useState(0);
+    const [paused, setPaused] = useState(false);
+    const total = testimonials.length;
+
+    const go = (next: number) => setActive((next + total) % total);
+
+    useEffect(() => {
+        if (paused || prefersReducedMotion) return;
+        const timer = setTimeout(() => setActive((i) => (i + 1) % total), AUTOPLAY_MS);
+        return () => clearTimeout(timer);
+    }, [active, paused, prefersReducedMotion, total]);
+
+    const current = testimonials[active];
+    const upcoming = [1, 2, 3].map((offset) => (active + offset) % total);
 
     return (
-        <section className="w-full py-8">
-            <div className="mx-auto w-full max-w-7xl px-4">
+        <section className="w-full border-b border-[#E7E2D8] bg-[#FAF8F4] py-14 sm:py-20">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 {/* Header */}
-                <div className="mb-10 md:mb-16 text-center">
-                    <p className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-700">{t('testimony.subtitle', 'What our costumers say about us')}</p>
-                    <h2 className="text-3xl md:text-5xl font-bold font-literata text-primary">{t('testimony.title', 'Testimonials')}</h2>
-                </div>
+                <Reveal y={22}>
+                    <div className="mb-8 flex flex-col justify-between gap-4 sm:mb-10 sm:flex-row sm:items-end">
+                        <div>
+                            <p className="mb-2 text-xs font-semibold tracking-wider text-[#5B6B7F] uppercase sm:text-sm">
+                                {t('testimony.subtitle', 'What our customers say about us')}
+                            </p>
+                            <h2 className="font-literata text-2xl font-bold text-[#12344E] sm:text-3xl">{t('testimony.title', 'Testimonials')}</h2>
+                        </div>
 
-                {/* Carousel */}
-                <Carousel index={carouselIndex} onIndexChange={setCarouselIndex} disableDrag={false} className="w-full">
-                    <CarouselContent className="ml-0">
-                        {testimonials.map((testimonial, idx) => (
-                            <CarouselItem key={idx} className="pl-0">
-                                <div className="hidden">
-                                    <TestimonyCard testimonial={testimonial} isCenter={false}/>
-                                </div>
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                    <TestimonyCarousel />
-                </Carousel>
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium text-[#5B6B7F] tabular-nums" aria-live="polite">
+                                {String(active + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+                            </span>
+                            <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => go(active - 1)} aria-label="Previous testimonial">
+                                <ChevronLeft className="h-5 w-5" />
+                            </Button>
+                            <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => go(active + 1)} aria-label="Next testimonial">
+                                <ChevronRight className="h-5 w-5" />
+                            </Button>
+                        </div>
+                    </div>
+                </Reveal>
+
+                <Reveal y={28} delay={0.1} duration={0.65}>
+                    <div
+                        className="grid grid-cols-1 gap-6 lg:grid-cols-12"
+                        onMouseEnter={() => setPaused(true)}
+                        onMouseLeave={() => setPaused(false)}
+                        onFocusCapture={() => setPaused(true)}
+                        onBlurCapture={() => setPaused(false)}
+                    >
+                        {/* Featured quote */}
+                        <figure className="relative flex min-h-[320px] flex-col overflow-hidden rounded-xl border border-[#DCE3EC] bg-white p-6 shadow-xs sm:p-8 lg:col-span-8 lg:p-10">
+                            <span className="font-literata pointer-events-none absolute -top-4 right-6 text-[120px] leading-none text-[#FFE4D1] select-none" aria-hidden="true">
+                                &ldquo;
+                            </span>
+                            <AnimatePresence mode="wait" initial={false}>
+                                <motion.div
+                                    key={active}
+                                    initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={prefersReducedMotion ? undefined : { opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.35, ease: EASE_OUT_EXPO }}
+                                    className="relative flex flex-1 flex-col"
+                                >
+                                    <blockquote className="font-literata text-lg leading-relaxed text-[#162230] sm:text-xl lg:text-[22px] lg:leading-[1.6]">
+                                        {current.text}
+                                    </blockquote>
+                                    <figcaption className="mt-auto flex items-center gap-4 border-t border-[#F1F5F9] pt-6">
+                                        <TestimonyAvatar testimonial={current} className="h-14 w-14 text-base" />
+                                        <div>
+                                            <p className="text-base font-semibold text-[#162230]">{current.name}</p>
+                                            <p className="text-sm text-[#5B6B7F]">{current.role}</p>
+                                        </div>
+                                    </figcaption>
+                                </motion.div>
+                            </AnimatePresence>
+                        </figure>
+
+                        {/* Up next */}
+                        <ul className="hidden flex-col gap-3 lg:col-span-4 lg:flex">
+                            {upcoming.map((idx) => {
+                                const item = testimonials[idx];
+                                return (
+                                    <li key={item.name} className="flex-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => go(idx)}
+                                            className="group flex h-full w-full flex-col gap-3 rounded-xl border border-[#DCE3EC] bg-white/60 p-4 text-left transition-colors hover:border-[#93C5FD] hover:bg-white focus-visible:ring-2 focus-visible:ring-[#1976D3] focus-visible:outline-none"
+                                        >
+                                            <span className="flex items-center gap-3">
+                                                <TestimonyAvatar testimonial={item} className="h-10 w-10 text-xs" />
+                                                <span className="min-w-0">
+                                                    <span className="block truncate text-sm font-semibold text-[#162230] group-hover:text-[#1976D3]">{item.name}</span>
+                                                    <span className="block truncate text-xs text-[#5B6B7F]">{item.role}</span>
+                                                </span>
+                                            </span>
+                                            <span className="line-clamp-2 text-sm leading-relaxed text-[#475569]">{item.text}</span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </div>
+                </Reveal>
+
+                {/* Progress dots (mobile & tablet) */}
+                <div className="mt-6 flex justify-center gap-1.5 lg:hidden">
+                    {testimonials.map((item, idx) => (
+                        <button
+                            key={item.name}
+                            type="button"
+                            onClick={() => go(idx)}
+                            aria-label={`${idx + 1}`}
+                            aria-current={idx === active}
+                            className={cn('h-1.5 rounded-full transition-all', idx === active ? 'w-6 bg-[#12344E]' : 'w-1.5 bg-[#CBD5E1]')}
+                        />
+                    ))}
+                </div>
             </div>
         </section>
     );

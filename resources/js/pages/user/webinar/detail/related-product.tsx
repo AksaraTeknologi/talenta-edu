@@ -1,6 +1,4 @@
-import { Spotlight } from '@/components/ui/spotlight';
-import { Link } from '@inertiajs/react';
-import { Calendar } from 'lucide-react';
+import { ProgramCard } from '@/components/program-card';
 import { useTranslation } from 'react-i18next';
 
 interface Webinar {
@@ -22,78 +20,43 @@ interface RelatedProductProps {
 }
 
 export default function RelatedProduct({ relatedWebinars, myWebinarIds }: RelatedProductProps) {
-    const { t, i18n } = useTranslation('user');
-    const locale = i18n.language === 'en' ? 'en-US' : 'id-ID';
+    const { t } = useTranslation('user');
 
     if (!relatedWebinars || relatedWebinars.length === 0) {
         return null;
     }
 
     return (
-        <section className="mx-auto mt-16 w-full max-w-7xl px-4" id="related">
-            <h2 className="dark:text-primary-foreground mb-4 text-center text-3xl font-bold text-gray-900 italic md:text-4xl">
-                {t('webinar.detail.similarTitle', 'Webinar Serupa')}
-            </h2>
-            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
-                {t('webinar.detail.similarSubtitle', 'Webinar lain yang mungkin menarik untuk Anda')}
-            </p>
+        <section className="mt-14 border-t border-[#DCE3EC] pt-12" id="related">
+            <div className="mb-8">
+                <h2 className="font-literata text-2xl font-bold text-[#12344E] sm:text-3xl">
+                    {t('webinar.detail.similarTitle', 'Webinar Serupa')}
+                </h2>
+                <p className="mt-1.5 text-sm text-[#475569] sm:text-base">
+                    {t('webinar.detail.similarSubtitle', 'Webinar lain yang mungkin menarik untuk Anda')}
+                </p>
+            </div>
 
-            <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {relatedWebinars.map((webinar) => {
                     const hasAccess = myWebinarIds.includes(webinar.id);
-
                     return (
-                        <Link
+                        <ProgramCard
                             key={webinar.id}
+                            product={{
+                                id: webinar.id,
+                                title: webinar.title,
+                                slug: webinar.slug,
+                                thumbnail: webinar.thumbnail,
+                                price: webinar.price,
+                                strikethrough_price: webinar.strikethrough_price,
+                                start_time: webinar.start_time,
+                                category: webinar.category,
+                                type: 'webinar',
+                            }}
                             href={hasAccess ? `/profile/my-webinars/${webinar.slug}` : `/webinar/${webinar.slug}`}
-                            className="relative overflow-hidden rounded-xl bg-zinc-300/30 p-[2px] dark:bg-zinc-700/30"
-                        >
-                            <Spotlight className="bg-primary blur-2xl" size={284} />
-                            <div
-                                className={`relative flex h-full w-full flex-col items-center justify-between rounded-lg transition-colors ${
-                                    hasAccess ? 'bg-zinc-100 dark:bg-zinc-900' : 'bg-sidebar dark:bg-zinc-800'
-                                }`}
-                            >
-                                <div className="w-full overflow-hidden rounded-t-lg">
-                                    <img
-                                        src={webinar.thumbnail ? `/storage/${webinar.thumbnail}` : '/assets/images/placeholder.png'}
-                                        alt={webinar.title}
-                                        className="h-48 w-full rounded-t-lg object-cover"
-                                    />
-                                    <h2 className="mx-4 mt-2 text-lg font-semibold">{webinar.title}</h2>
-                                </div>
-                                <div className="w-full p-4 text-left">
-                                    {hasAccess ? (
-                                        <p className="text-primary text-sm font-medium">{t('webinar.detail.owned', 'Anda sudah memiliki akses')}</p>
-                                    ) : webinar.price === 0 ? (
-                                        <p className="text-lg font-semibold text-green-600 dark:text-green-400">{t('webinar.detail.freeLower', 'Gratis')}</p>
-                                    ) : (
-                                        <div className="">
-                                            {webinar.strikethrough_price > 0 && (
-                                                <p className="text-sm text-red-500 line-through">
-                                                    Rp {webinar.strikethrough_price.toLocaleString('id-ID')}
-                                                </p>
-                                            )}
-                                            <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                                                Rp {webinar.price.toLocaleString('id-ID')}
-                                            </p>
-                                        </div>
-                                    )}
-                                    <div className="mt-2 flex justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <Calendar size="18" />
-                                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                                                {new Date(webinar.start_time).toLocaleDateString(locale, {
-                                                    day: 'numeric',
-                                                    month: 'long',
-                                                    year: 'numeric',
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </Link>
+                            hasAccess={hasAccess}
+                        />
                     );
                 })}
             </div>

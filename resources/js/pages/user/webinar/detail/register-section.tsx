@@ -1,10 +1,8 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { SharedData } from '@/types';
-import { Link, usePage } from '@inertiajs/react';
-import { BadgeCheck, CalendarDays, Clock, Hourglass, MapPin, Star, Users } from 'lucide-react';
+import { calculateDiscountPercent, formatIndonesianDate } from '@/lib/utils';
+import { Link } from '@inertiajs/react';
+import { Hourglass, MapPin, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Webinar {
@@ -28,228 +26,84 @@ interface Webinar {
 }
 
 export default function RegisterSection({ webinar }: { webinar: Webinar }) {
-    const { auth } = usePage<SharedData>().props;
     const { t, i18n } = useTranslation('user');
-    const locale = i18n.language === 'en' ? 'en-US' : 'id-ID';
+    const lang = i18n.language || 'id';
 
-    const isLoggedIn = !!auth.user;
-    const isProfileComplete = isLoggedIn && auth.user?.phone_number;
-
-    let registrationUrl: string;
-    let buttonText: string;
-    let warningMessage: string | null = null;
-
-    registrationUrl = webinar.registration_url;
-    buttonText = t('webinar.detail.btnJoinNow', 'Gabung Sekarang');
-    warningMessage = null;
-
+    const registrationUrl = webinar.registration_url;
+    const buttonText = t('webinar.detail.btnJoinNow', 'Gabung Sekarang');
     const deadline = new Date(webinar.registration_deadline);
     const isRegistrationOpen = new Date() < deadline;
-
-    const getInitials = (name: string) => {
-        return name
-            .split(' ')
-            .map((n) => n[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    };
+    const discountPercent = calculateDiscountPercent(webinar.strikethrough_price, webinar.price);
 
     return (
-        <section className="mx-auto mt-4 md:mt-8 mb-8 sm:mb-12 w-full max-w-7xl px-4 sm:px-6 lg:px-8" id="register">
-            <Badge className="border-purple-400 bg-white text-purple-400 px-2 py-1 text-xs sm:text-sm">
-                {t('webinar.detail.badgeWebinar', 'Webinar')}
-            </Badge>
-            <div className="mt-4 sm:mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[2fr_1fr]">
-                {/* Left Column - Webinar Details */}
-                <div className="flex flex-col gap-4 sm:gap-6">
-                    <div>
-                        <h1 className="mb-2 text-2xl sm:text-3xl md:text-4xl font-bold font-literata text-gray-900 dark:text-gray-100 leading-tight">
-                            {webinar.title}
-                        </h1>
+        <div className="rounded-2xl border border-[#DCE3EC] bg-white p-6 shadow-md">
+            {/* Price & Discount */}
+            <div className="mb-5">
+                {discountPercent > 0 && webinar.strikethrough_price > 0 && (
+                    <div className="mb-1.5 flex flex-wrap items-center gap-2">
+                        <span className="text-sm text-[#64748B] line-through tabular-nums">
+                            Rp {webinar.strikethrough_price.toLocaleString('id-ID')}
+                        </span>
+                        <span className="rounded-full border border-[#FED7AA] bg-[#FFF3EB] px-2.5 py-0.5 text-xs font-semibold text-[#B8470A]">
+                            {t('home:latest.save', { discount: discountPercent, defaultValue: `Hemat ${discountPercent}%` })}
+                        </span>
                     </div>
-                    <div>
-                        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                            {webinar.description}
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-4 sm:gap-6">
-                        <div className="flex items-center gap-2">
-                            <CalendarDays className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
-                            <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
-                                {new Date(webinar.start_time).toLocaleDateString(locale, {
-                                    weekday: 'long',
-                                    day: 'numeric',
-                                    month: 'long',
-                                    year: 'numeric',
-                                })}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
-                            <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
-                                {new Date(webinar.start_time).toLocaleTimeString(locale, {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                                {' - '}
-                                {new Date(webinar.end_time).toLocaleTimeString(locale, {
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                })}
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Users className="h-4 w-4 sm:h-5 sm:w-5 text-gray-600" />
-                            <p className="text-sm sm:text-base font-medium text-gray-900 dark:text-gray-100">
-                                {webinar.quota
-                                    ? t('webinar.detail.quotaParticipants', { quota: webinar.quota, defaultValue: `Kuota ${webinar.quota} Peserta` })
-                                    : t('webinar.detail.unlimitedQuota', 'Kuota Tidak Terbatas')}
-                            </p>
-                        </div>
-                    </div>
+                )}
 
-                    {/* Webinar Image */}
-                    <img
-                        src={webinar.thumbnail ? `/storage/${webinar.thumbnail}` : '/assets/images/placeholder.png'}
-                        alt={webinar.title}
-                        className="w-full h-48 sm:h-64 md:h-80 lg:h-96 rounded-lg sm:rounded-xl object-cover border border-primary/50"
-                    />
+                {webinar.price > 0 ? (
+                    <h2 className="font-literata text-3xl font-bold text-[#12344E] tabular-nums">
+                        Rp {webinar.price.toLocaleString('id-ID')}
+                    </h2>
+                ) : (
+                    <h2 className="font-literata text-3xl font-bold text-[#15803D]">{t('webinar.detail.free', 'GRATIS')}</h2>
+                )}
+            </div>
 
-                    {/* Speaker Section - Hidden on mobile, shown on tablet+ */}
-                    {webinar.user && (
-                        <div className="hidden sm:block">
-                            <Link
-                                href={`/mentor/${webinar.user.id}`}
-                                className="flex items-center justify-between gap-4 dark:border-zinc-700 dark:bg-zinc-800"
-                            >
-                                <div className="flex w-full items-center gap-4">
-                                    <Avatar className="ring-primary/20 h-12 w-12 ring-4 md:h-16 md:w-16">
-                                        <AvatarImage src={webinar.user.avatar} alt={webinar.user.name} />
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold md:text-3xl">
-                                            {getInitials(webinar.user.name)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="w-full">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{webinar.user.name}</h3>
-                                        </div>
-                                        <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">{webinar.user.bio}</p>
-                                    </div>
-                                </div>
-                            </Link>
-                        </div>
-                    )}
+            {/* Primary CTA */}
+            {isRegistrationOpen ? (
+                <Button className="mb-5 h-12 w-full rounded-lg text-base font-semibold" size="lg" asChild>
+                    <Link href={registrationUrl}>{buttonText}</Link>
+                </Button>
+            ) : (
+                <Button className="mb-5 h-12 w-full rounded-lg text-base" size="lg" disabled>
+                    {t('webinar.detail.registrationClosed', 'Pendaftaran Ditutup')}
+                </Button>
+            )}
+
+            <Separator className="mb-5 bg-[#DCE3EC]" />
+
+            {/* Meta Info (Quota displayed once here) */}
+            <div className="space-y-3 text-sm text-[#475569]">
+                <div className="flex items-start gap-3">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#5B6B7F]" />
+                    <span>{t('webinar.detail.onlinePlatform', 'Google Meet/Zoom')}</span>
                 </div>
-
-                {/* Right Column - Price Card */}
-                <div className="flex flex-col">
-                    <div className="lg:sticky lg:top-4 rounded-xl sm:rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 shadow-lg dark:border-zinc-700 dark:bg-zinc-800">
-                        {webinar.strikethrough_price > 0 && (
-                            <span className="block text-xs sm:text-sm text-gray-500 font-literata line-through mb-1">
-                                Rp {webinar.strikethrough_price.toLocaleString('id-ID')}
-                            </span>
-                        )}
-                        {webinar.price > 0 ? (
-                            <h3 className="mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl font-bold font-literata text-gray-900 dark:text-gray-100">
-                                Rp {webinar.price.toLocaleString('id-ID')}
-                            </h3>
-                        ) : (
-                            <h3 className="mb-4 sm:mb-6 text-2xl sm:text-3xl md:text-4xl font-bold font-literata text-gray-900 dark:text-gray-100">
-                                {t('webinar.detail.free', 'GRATIS')}
-                            </h3>
-                        )}
-
-                        {warningMessage && (
-                            <div className="mb-3 sm:mb-4 p-2 sm:p-3 text-center bg-red-50 dark:bg-red-900/20 rounded-lg">
-                                <p className="text-xs sm:text-sm text-red-600 dark:text-red-400">{warningMessage}</p>
-                            </div>
-                        )}
-
-                        {isRegistrationOpen ? (
-                            <Button className="mb-4 sm:mb-6 w-full rounded-lg text-sm sm:text-base py-5 sm:py-6" asChild>
-                                <Link href={registrationUrl}>{buttonText}</Link>
-                            </Button>
-                        ) : (
-                            <Button className="mb-4 sm:mb-6 w-full rounded-lg text-sm sm:text-base py-5 sm:py-6" disabled>
-                                {t('webinar.detail.registrationClosed', 'Pendaftaran Ditutup')}
-                            </Button>
-                        )}
-
-                        <Separator className="mb-4 sm:mb-6" />
-
-                        <div className="space-y-2 sm:space-y-3">
-                            <div className="flex items-start gap-2 sm:gap-3">
-                                <MapPin className="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0 text-gray-600" />
-                                <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">{t('webinar.detail.onlinePlatform', 'Google Meet/Zoom')}</span>
-                            </div>
-                            <div className="flex items-start gap-2 sm:gap-3">
-                                <Hourglass className="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0 text-gray-600" />
-                                <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                                    {t('webinar.detail.batch', { batch: webinar.batch, defaultValue: `Batch ${webinar.batch}` })}
-                                </span>
-                            </div>
-                            <div className="flex items-start gap-2 sm:gap-3">
-                                <Users className="h-4 w-4 sm:h-5 sm:w-5 mt-0.5 flex-shrink-0 text-gray-600" />
-                                <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-300">
-                                    {webinar.quota
-                                        ? t('webinar.detail.quotaParticipants', { quota: webinar.quota, defaultValue: `Kuota ${webinar.quota} Peserta` })
-                                        : t('webinar.detail.unlimitedQuota', 'Kuota Tidak Terbatas')}
-                                </span>
-                            </div>
-                        </div>
-
-                        <Separator className="my-4 sm:my-6" />
-
-                        <div className="space-y-1 sm:space-y-2">
-                            <p className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                                {t('webinar.detail.lastRegistrationLabel', 'Terakhir pendaftaran:')}
-                            </p>
-                            <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-                                {new Date(webinar.registration_deadline).toLocaleDateString(locale, {
-                                    weekday: 'long',
-                                    day: 'numeric',
-                                    month: 'long',
-                                    year: 'numeric',
-                                })}
-                            </p>
-                        </div>
+                {webinar.batch && (
+                    <div className="flex items-start gap-3">
+                        <Hourglass className="mt-0.5 h-4 w-4 shrink-0 text-[#5B6B7F]" />
+                        <span>{t('webinar.detail.batch', { batch: webinar.batch, defaultValue: `Batch ${webinar.batch}` })}</span>
                     </div>
-
-                    {/* Speaker Section for Mobile - Shown only on mobile */}
-                    {webinar.user && (
-                        <div className="block sm:hidden mt-6">
-                            <p className="text-primary border-primary bg-background mb-4 w-fit rounded-full border bg-gradient-to-t from-[#D9E5FF] to-white px-4 py-1 text-sm font-medium shadow-xs">
-                                {t('webinar.detail.webinarSpeaker', 'Pemateri Webinar')}
-                            </p>
-                            <Link
-                                href={`/mentor/${webinar.user.id}`}
-                                className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-md transition active:shadow-lg dark:border-zinc-700 dark:bg-zinc-800"
-                            >
-                                <div className="flex w-full items-center gap-4">
-                                    <Avatar className="ring-primary/20 h-12 w-12 ring-4">
-                                        <AvatarImage src={webinar.user.avatar} alt={webinar.user.name} />
-                                        <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
-                                            {getInitials(webinar.user.name)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div className="w-full">
-                                        <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100">{webinar.user.name}</h3>
-                                        <p className="mb-2 text-sm text-gray-600 dark:text-gray-400">{webinar.user.bio}</p>
-                                        <div className="flex items-center gap-1">
-                                            <Star size={16} className="text-yellow-500" fill="currentColor" />
-                                            <Star size={16} className="text-yellow-500" fill="currentColor" />
-                                            <Star size={16} className="text-yellow-500" fill="currentColor" />
-                                            <Star size={16} className="text-yellow-500" fill="currentColor" />
-                                            <Star size={16} className="text-yellow-500" fill="currentColor" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </Link>
-                        </div>
-                    )}
+                )}
+                <div className="flex items-start gap-3">
+                    <Users className="mt-0.5 h-4 w-4 shrink-0 text-[#5B6B7F]" />
+                    <span>
+                        {webinar.quota
+                            ? t('webinar.detail.quotaParticipants', { quota: webinar.quota, defaultValue: `Kuota ${webinar.quota} Peserta` })
+                            : t('webinar.detail.unlimitedQuota', 'Kuota Tidak Terbatas')}
+                    </span>
                 </div>
             </div>
-        </section>
+
+            <Separator className="my-5 bg-[#DCE3EC]" />
+
+            <div className="rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-3.5">
+                <p className="text-xs font-semibold text-[#5B6B7F]">
+                    {t('webinar.detail.lastRegistrationLabel', 'Terakhir pendaftaran:')}
+                </p>
+                <p className="mt-1 text-sm font-semibold text-[#12344E]">
+                    {formatIndonesianDate(webinar.registration_deadline, lang)}
+                </p>
+            </div>
+        </div>
     );
 }

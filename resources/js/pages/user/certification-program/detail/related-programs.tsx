@@ -1,9 +1,4 @@
-import { Badge } from '@/components/ui/badge';
-import { Spotlight } from '@/components/ui/spotlight';
-import { Link } from '@inertiajs/react';
-import { format } from 'date-fns';
-import { id, enUS } from 'date-fns/locale';
-import { Calendar, GraduationCap } from 'lucide-react';
+import { ProgramCard } from '@/components/program-card';
 import { useTranslation } from 'react-i18next';
 
 interface RelatedProgram {
@@ -28,83 +23,51 @@ export default function RelatedPrograms({
     approvedScholarshipProgramIds?: string[];
     myProgramIds?: string[];
 }) {
-    const { t, i18n } = useTranslation('user');
-    const dateLocale = i18n.language === 'en' ? enUS : id;
+    const { t } = useTranslation('user');
 
     if (!relatedPrograms || relatedPrograms.length === 0) return null;
 
-    const formatRupiah = (amount: number) =>
-        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
-
     return (
-        <section className="mx-auto mt-16 w-full max-w-7xl px-4" id="related">
-            <h2 className="dark:text-primary-foreground mb-4 text-center text-3xl font-bold text-gray-900 italic md:text-4xl">
-                {t('certificationProgram.detail.related.title', 'Program Sertifikasi Lainnya')}
-            </h2>
-            <p className="mb-8 text-center text-gray-600 dark:text-gray-400">
-                {t('certificationProgram.detail.related.subtitle', 'Program sertifikasi lain yang mungkin menarik untuk Anda')}
-            </p>
+        <section className="mt-14 border-t border-[#DCE3EC] pt-12" id="related">
+            <div className="mb-8">
+                <h2 className="font-literata text-2xl font-bold text-[#12344E] sm:text-3xl">
+                    {t('certificationProgram.detail.related.title', 'Program Sertifikasi Lainnya')}
+                </h2>
+                <p className="mt-1.5 text-sm text-[#475569] sm:text-base">
+                    {t('certificationProgram.detail.related.subtitle', 'Program sertifikasi lain yang mungkin menarik untuk Anda')}
+                </p>
+            </div>
 
-            <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {relatedPrograms.map((program) => {
                     const hasAccess = myProgramIds.includes(program.id);
-                    const deadline = program.type === 'scholarship' ? program.socialization_registration_deadline : program.registration_deadline;
-                    const deadlineDate = deadline ? new Date(deadline) : null;
+                    const isApprovedScholarship = program.type === 'scholarship' && approvedScholarshipProgramIds?.includes(program.id);
+                    const isScholarshipNotApproved = program.type === 'scholarship' && !isApprovedScholarship;
+                    const displayPrice = isScholarshipNotApproved ? 0 : program.price;
+
                     return (
-                        <Link
+                        <ProgramCard
                             key={program.id}
-                            href={hasAccess ? route('profile.certification-program.detail', program.slug) : route('certification-programs.detail', program.slug)}
-                            className="relative overflow-hidden rounded-xl bg-zinc-300/30 p-[2px] dark:bg-zinc-700/30"
-                        >
-                            <Spotlight className="bg-primary blur-2xl" size={284} />
-                            <div className={`relative flex h-full w-full flex-col items-center justify-between rounded-lg transition-colors ${hasAccess ? 'bg-zinc-100 dark:bg-zinc-900' : 'bg-sidebar dark:bg-zinc-800'}`}>
-                                <div className="w-full overflow-hidden rounded-t-lg">
-                                    <img
-                                        src={program.thumbnail ? `/storage/${program.thumbnail}` : '/assets/images/placeholder.png'}
-                                        alt={program.title}
-                                        className="h-48 w-full rounded-t-lg object-cover"
-                                    />
-                                    <div className="p-4">
-                                        <Badge className={`mb-2 border-0 text-xs ${program.type === 'scholarship' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'}`}>
-                                            <GraduationCap size={12} className="mr-1" />
-                                            {program.type === 'scholarship' ? t('certificationProgram.detail.related.badgeScholarship', 'Beasiswa') : t('certificationProgram.detail.related.badgeRegular', 'Reguler')}
-                                        </Badge>
-                                        <h2 className="mb-2 line-clamp-2 text-lg font-semibold">{program.title}</h2>
-                                    </div>
-                                </div>
-
-                                <div className="w-full border-t p-4 text-left">
-                                    {(() => {
-                                        const isApprovedScholarship = program.type === 'scholarship' && approvedScholarshipProgramIds?.includes(program.id);
-                                        const isScholarshipNotApproved = program.type === 'scholarship' && !isApprovedScholarship;
-                                        const displayPrice = isScholarshipNotApproved ? 0 : program.price;
-
-                                        return displayPrice === 0 ? (
-                                            <p className="mb-2 text-lg font-semibold text-green-600 dark:text-green-400">
-                                                {t('certificationProgram.detail.related.free', 'Gratis')}
-                                            </p>
-                                        ) : (
-                                            <div className="mb-2">
-                                                {!isScholarshipNotApproved &&
-                                                typeof program.strikethrough_price === 'number' &&
-                                                program.strikethrough_price > 0 ? (
-                                                    <p className="text-sm text-red-500 line-through">{formatRupiah(program.strikethrough_price)}</p>
-                                                ) : null}
-                                                <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">{formatRupiah(displayPrice)}</p>
-                                            </div>
-                                        );
-                                    })()}
-                                    {deadlineDate && !hasAccess && (
-                                        <div className="flex items-center gap-2 text-sm mt-2">
-                                            <Calendar size="16" className="text-red-500" />
-                                            <p className="text-gray-600 dark:text-gray-400">
-                                                {t('certificationProgram.detail.related.registerBefore', 'Daftar sebelum:')} <span className="font-medium">{format(deadlineDate, 'dd MMM yyyy', { locale: dateLocale })}</span>
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        </Link>
+                            product={{
+                                id: program.id,
+                                title: program.title,
+                                slug: program.slug,
+                                thumbnail: program.thumbnail,
+                                price: displayPrice,
+                                strikethrough_price: isScholarshipNotApproved ? 0 : program.strikethrough_price,
+                                registration_deadline: program.registration_deadline,
+                                socialization_registration_deadline: program.socialization_registration_deadline,
+                                program_type: program.type,
+                                category: program.category,
+                                type: 'certification-program',
+                            }}
+                            href={
+                                hasAccess
+                                    ? route('profile.certification-program.detail', program.slug)
+                                    : route('certification-programs.detail', program.slug)
+                            }
+                            hasAccess={hasAccess}
+                        />
                     );
                 })}
             </div>

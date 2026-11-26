@@ -112,7 +112,7 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
 
     return (
         <>
-            <div className="border-sidebar-border/80 bg-background fixed top-0 right-0 left-0 z-40 border-b shadow-xs">
+            <div className="fixed top-0 right-0 left-0 z-40 border-b border-[#DCE3EC] bg-white/95 backdrop-blur-sm">
                 <div className="mx-auto flex h-16 items-center px-4 md:max-w-7xl">
                     <Link href="/" prefetch className="flex items-center space-x-2">
                         <img src="/assets/images/logo-primary.png" alt="Talenta" className="block w-10 fill-current" />
@@ -284,10 +284,10 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             </DropdownMenu>
                         ) : (
                             <>
-                                <Button variant="outline" asChild>
+                                <Button variant="outline" className="h-10" asChild>
                                     <Link href={route('login')}>{t('nav.login', 'Masuk')}</Link>
                                 </Button>
-                                <Button variant="default" asChild className="hidden lg:inline-flex">
+                                <Button variant="default" asChild className="hidden h-10 lg:inline-flex">
                                     <Link href={route('register')}>{t('nav.register', 'Daftar')}</Link>
                                 </Button>
                             </>

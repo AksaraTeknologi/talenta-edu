@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import UserLayout from '@/layouts/user-layout';
+import { resolveStorageUrl } from '@/lib/utils';
 import { Head, Link } from '@inertiajs/react';
 import axios from 'axios';
 import {
@@ -359,41 +360,43 @@ export default function TransactionShow({ invoice }: Props) {
         <UserLayout>
             <Head title={t('transaction.headTitle', { code: invoice.invoice_code })} />
 
-            <div className="min-h-screen bg-gray-50 py-4 md:py-8 dark:bg-gray-900">
-                <div className="mx-auto max-w-7xl px-4">
-                    <div className="overflow-hidden rounded-lg bg-white shadow-lg dark:bg-gray-800">
-                        {/* Header Banner */}
-                        <div className="to-primary flex gap-3 bg-gradient-to-tl from-black px-6 py-4 text-white">
-                            {getStatusIcon()}
-                            <div>
-                                <h1 className={`text-xl font-bold md:text-2xl ${getStatusColor()}`}>{getStatusText()}</h1>
-                                <p className="mt-1 text-sm text-blue-100 md:text-base">
-                                    {t('transaction.invoiceNumber', { code: invoice.invoice_code })}
-                                </p>
+            <div className="min-h-screen bg-[#FAF8F4] py-6 pb-24 sm:py-10 lg:pb-12">
+                <div className="mx-auto max-w-4xl px-4 sm:px-6">
+                    <div className="overflow-hidden rounded-2xl border border-[#DCE3EC] bg-white shadow-sm">
+                        {/* Editorial Header Banner */}
+                        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#DCE3EC] bg-[#12344E] px-6 py-5 text-white">
+                            <div className="flex items-start gap-3">
+                                {getStatusIcon()}
+                                <div>
+                                    <h1 className="font-literata text-xl font-bold text-white sm:text-2xl">{getStatusText()}</h1>
+                                    <p className="mt-1 text-sm text-[#DCE3EC]">
+                                        {t('transaction.invoiceNumber', { code: invoice.invoice_code })}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        <div className="p-6">
+                        <div className="space-y-6 p-5 sm:p-6">
                             {/* Product Info Card */}
                             {productInfo && (
-                                <div className="mb-6 rounded-lg border bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
-                                    <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
+                                <div className="rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4 sm:p-5">
+                                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-[#5B6B7F]">
                                         {t('transaction.purchasedProduct')}
                                     </h3>
-                                    <div className="flex items-start gap-4">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
                                         <img
-                                            src={productInfo.thumbnail ? `/storage/${productInfo.thumbnail}` : '/assets/images/placeholder.png'}
+                                            src={resolveStorageUrl(productInfo.thumbnail) || '/assets/images/placeholder.png'}
                                             alt={productInfo.name}
-                                            className="h-16 rounded-lg object-cover md:h-20"
+                                            className="h-20 w-full rounded-xl border border-[#DCE3EC] bg-white object-contain p-1 sm:w-28"
                                         />
-                                        <div className="flex-1">
-                                            <h4 className="font-semibold text-gray-900 dark:text-white">{productInfo.name}</h4>
-                                            <p className="text-sm text-gray-600 capitalize dark:text-gray-400">
+                                        <div className="min-w-0 flex-1">
+                                            <span className="inline-block rounded-md border border-[#BFDBFE] bg-[#EAF3FC] px-2.5 py-0.5 text-xs font-semibold capitalize text-[#155FA8]">
                                                 {productInfo.badge}
-                                            </p>
-                                            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                                            </span>
+                                            <h4 className="font-literata mt-1.5 text-lg font-bold text-[#12344E]">{productInfo.name}</h4>
+                                            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                                                 {canAccessProduct ? (
-                                                    <Button asChild size="sm" variant="outline">
+                                                    <Button asChild size="sm" variant="outline" className="h-10">
                                                         <Link
                                                             href={
                                                                 productInfo.type === 'bundle'
@@ -414,7 +417,7 @@ export default function TransactionShow({ invoice }: Props) {
                                                         </Link>
                                                     </Button>
                                                 ) : (
-                                                    <Button asChild size="sm" variant="ghost">
+                                                    <Button asChild size="sm" variant="outline" className="h-10">
                                                         <Link
                                                             href={
                                                                 productInfo.type === 'bundle'
@@ -437,134 +440,142 @@ export default function TransactionShow({ invoice }: Props) {
 
                             {/* Status Alerts */}
                             {isInstallment && isSuspended && (
-                                <Alert className="mb-6 border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-                                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                                    <AlertDescription className="text-red-700 dark:text-red-300">
-                                        <span className="font-semibold block mb-1">{t('transaction.alertSuspendedTitle')}</span>
+                                <Alert className="rounded-xl border-[#FECACA] bg-[#FEF2F2]">
+                                    <AlertTriangle className="h-4 w-4 text-[#B91C1C]" />
+                                    <AlertDescription className="text-[#B91C1C]">
+                                        <span className="mb-1 block font-semibold">{t('transaction.alertSuspendedTitle')}</span>
                                         {t('transaction.alertSuspendedDesc')}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             {isInstallment && !isFullyPaid && isTerm1Paid && !isSuspended && (
-                                <Alert className="mb-6 border-indigo-200 bg-indigo-50 dark:border-indigo-800 dark:bg-indigo-950/30">
-                                    <Clock className="h-4 w-4 text-indigo-600" />
-                                    <AlertDescription className="text-indigo-700 dark:text-indigo-300">
-                                        <span className="font-semibold block mb-1">{t('transaction.alertActiveTitle')}</span>
+                                <Alert className="rounded-xl border-[#BFDBFE] bg-[#EAF3FC]">
+                                    <Clock className="h-4 w-4 text-[#1976D3]" />
+                                    <AlertDescription className="text-[#12344E]">
+                                        <span className="mb-1 block font-semibold">{t('transaction.alertActiveTitle')}</span>
                                         {t('transaction.alertActiveDesc')}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             {isInstallment && !isTerm1Paid && invoice.status !== 'failed' && (
-                                <Alert className="mb-6 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30">
-                                    <Clock className="h-4 w-4 text-yellow-600" />
-                                    <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-                                        <span className="font-semibold block mb-1">{t('transaction.alertDPTitle')}</span>
+                                <Alert className="rounded-xl border-[#FDE68A] bg-[#FEFCE8]">
+                                    <Clock className="h-4 w-4 text-[#A16207]" />
+                                    <AlertDescription className="text-[#854D0E]">
+                                        <span className="mb-1 block font-semibold">{t('transaction.alertDPTitle')}</span>
                                         {t('transaction.alertDPDesc')}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             {!isInstallment && invoice.status === 'pending' && !isExpired && (
-                                <Alert className="mb-6 border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/30">
-                                    <Clock className="h-4 w-4 text-yellow-600" />
-                                    <AlertDescription className="text-yellow-700 dark:text-yellow-300">
-                                        <span className="font-semibold block mb-1">{t('transaction.alertPendingTitle')}</span>
+                                <Alert className="rounded-xl border-[#FDE68A] bg-[#FEFCE8]">
+                                    <Clock className="h-4 w-4 text-[#A16207]" />
+                                    <AlertDescription className="text-[#854D0E]">
+                                        <span className="mb-1 block font-semibold">{t('transaction.alertPendingTitle')}</span>
                                         {t('transaction.alertPendingDesc', { hours: hoursLeft, minutes: minutesLeft })}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             {!isInstallment && invoice.status === 'pending' && isExpired && (
-                                <Alert className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-                                    <XCircle className="h-4 w-4 text-red-600" />
-                                    <AlertDescription className="text-red-700 dark:text-red-300">
-                                        <span className="font-semibold block mb-1">{t('transaction.alertExpiredTitle')}</span>
+                                <Alert className="rounded-xl border-[#FECACA] bg-[#FEF2F2]">
+                                    <XCircle className="h-4 w-4 text-[#B91C1C]" />
+                                    <AlertDescription className="text-[#B91C1C]">
+                                        <span className="mb-1 block font-semibold">{t('transaction.alertExpiredTitle')}</span>
                                         {t('transaction.alertExpiredDesc')}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             {invoice.status === 'failed' && (
-                                <Alert className="mb-6 border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/30">
-                                    <AlertTriangle className="h-4 w-4 text-red-600" />
-                                    <AlertDescription className="text-red-700 dark:text-red-300">
-                                        <span className="font-semibold block mb-1">{t('transaction.alertCancelledTitle')}</span>
+                                <Alert className="rounded-xl border-[#FECACA] bg-[#FEF2F2]">
+                                    <AlertTriangle className="h-4 w-4 text-[#B91C1C]" />
+                                    <AlertDescription className="text-[#B91C1C]">
+                                        <span className="mb-1 block font-semibold">{t('transaction.alertCancelledTitle')}</span>
                                         {t('transaction.alertCancelledDesc')}
                                     </AlertDescription>
                                 </Alert>
                             )}
 
                             {/* Details Grid */}
-                            <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                                <div>
-                                    <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                <div className="rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-4 sm:p-5">
+                                    <h3 className="font-literata mb-3 text-lg font-bold text-[#12344E]">
                                         {t('transaction.paymentDetailsTitle')}
                                     </h3>
-                                    <div className="space-y-2 text-sm">
+                                    <div className="space-y-2.5 text-sm">
                                         {invoice.discount_amount > 0 && (
                                             <>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">{t('transaction.originalPrice')}</span>
-                                                    <span className="medium">
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-[#475569]">{t('transaction.originalPrice')}</span>
+                                                    <span className="font-medium text-[#5B6B7F] line-through tabular-nums">
                                                         Rp {(invoice.discount_amount + invoice.nett_amount)?.toLocaleString(localeCode)}
                                                     </span>
                                                 </div>
-                                                <div className="flex justify-between">
-                                                    <span className="text-gray-600 dark:text-gray-400">{t('transaction.discountLabel')}</span>
-                                                    <span className="text-gray-500 line-through">
-                                                        Rp {invoice.discount_amount?.toLocaleString(localeCode) || '0'}
+                                                <div className="flex justify-between gap-2">
+                                                    <span className="text-[#475569]">{t('transaction.discountLabel')}</span>
+                                                    <span className="font-semibold text-[#15803D] tabular-nums">
+                                                        -Rp {invoice.discount_amount?.toLocaleString(localeCode) || '0'}
                                                     </span>
                                                 </div>
                                             </>
                                         )}
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">{t('transaction.subtotalLabel')}</span>
-                                            <span className="font-medium">Rp {invoice.nett_amount?.toLocaleString(localeCode) || '0'}</span>
+                                        <div className="flex justify-between gap-2">
+                                            <span className="text-[#475569]">{t('transaction.subtotalLabel')}</span>
+                                            <span className="font-semibold text-[#162230] tabular-nums">
+                                                Rp {invoice.nett_amount?.toLocaleString(localeCode) || '0'}
+                                            </span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">{t('transaction.transactionFee')}</span>
-                                            <span className="font-medium">
+                                        <div className="flex justify-between gap-2">
+                                            <span className="text-[#475569]">{t('transaction.transactionFee')}</span>
+                                            <span className="font-medium text-[#162230] tabular-nums">
                                                 Rp {((invoice.amount || 0) - (invoice.nett_amount || 0)).toLocaleString(localeCode)}
                                             </span>
                                         </div>
-                                        <div className="flex justify-between border-t pt-2 text-lg font-semibold">
+                                        <div className="flex justify-between border-t border-[#DCE3EC] pt-3 text-base font-bold text-[#12344E]">
                                             <span>{t('transaction.totalLabel')}</span>
-                                            <span>Rp {invoice.amount?.toLocaleString(localeCode) || '0'}</span>
+                                            <span className="font-literata text-lg tabular-nums">
+                                                Rp {invoice.amount?.toLocaleString(localeCode) || '0'}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <h3 className="mb-3 text-lg font-semibold text-gray-900 dark:text-white">{t('transaction.paymentInfo')}</h3>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex justify-between">
-                                            <span className="text-gray-600 dark:text-gray-400">{t('transaction.statusLabel')}</span>
-                                            <span className={`font-medium ${getStatusColor()}`}>{getStatusText()}</span>
+                                <div className="rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4 sm:p-5">
+                                    <h3 className="font-literata mb-3 text-lg font-bold text-[#12344E]">{t('transaction.paymentInfo')}</h3>
+                                    <div className="space-y-2.5 text-sm">
+                                        <div className="flex justify-between gap-2">
+                                            <span className="text-[#475569]">{t('transaction.statusLabel')}</span>
+                                            <span className={`font-semibold ${getStatusColor()}`}>{getStatusText()}</span>
                                         </div>
                                         {invoice.payment_method && (
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600 dark:text-gray-400">{t('transaction.paymentMethod')}</span>
-                                                <span className="font-medium">{invoice.payment_method}</span>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-[#475569]">{t('transaction.paymentMethod')}</span>
+                                                <span className="font-medium text-[#162230]">{invoice.payment_method}</span>
                                             </div>
                                         )}
                                         {invoice.payment_channel && (
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600 dark:text-gray-400">{t('transaction.paymentChannel')}</span>
-                                                <span className="font-medium">{invoice.payment_channel}</span>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-[#475569]">{t('transaction.paymentChannel')}</span>
+                                                <span className="font-medium text-[#162230]">{invoice.payment_channel}</span>
                                             </div>
                                         )}
                                         {invoice.paid_at && (
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600 dark:text-gray-400">{t('transaction.paidOn')}</span>
-                                                <span className="font-medium">{new Date(invoice.paid_at).toLocaleString(localeCode)}</span>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-[#475569]">{t('transaction.paidOn')}</span>
+                                                <span className="font-medium text-[#162230] tabular-nums">
+                                                    {new Date(invoice.paid_at).toLocaleString(localeCode)}
+                                                </span>
                                             </div>
                                         )}
                                         {invoice.expires_at && invoice.status === 'pending' && (
-                                            <div className="flex justify-between">
-                                                <span className="text-gray-600 dark:text-gray-400">{t('transaction.expiresOn')}</span>
-                                                <span className="font-medium">{new Date(invoice.expires_at).toLocaleString(localeCode)}</span>
+                                            <div className="flex justify-between gap-2">
+                                                <span className="text-[#475569]">{t('transaction.expiresOn')}</span>
+                                                <span className="font-medium text-[#162230] tabular-nums">
+                                                    {new Date(invoice.expires_at).toLocaleString(localeCode)}
+                                                </span>
                                             </div>
                                         )}
                                     </div>
@@ -573,19 +584,19 @@ export default function TransactionShow({ invoice }: Props) {
 
                             {/* Installment terms list if available */}
                             {isInstallment && terms.length > 0 && (
-                                <div className="mb-6 rounded-lg border bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700">
-                                    <div className="mb-3 flex items-center justify-between">
-                                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                <div className="rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4 sm:p-5">
+                                    <div className="mb-3 flex items-center justify-between gap-2">
+                                        <h3 className="font-literata text-lg font-bold text-[#12344E]">
                                             {t('transaction.installmentTerms')}
                                         </h3>
                                         <Link
                                             href={route('profile.installments')}
-                                            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400"
+                                            className="text-xs font-semibold text-[#1976D3] hover:underline"
                                         >
                                             {t('transaction.installmentsPageLink')}
                                         </Link>
                                     </div>
-                                    <div className="space-y-2">
+                                    <div className="space-y-2.5">
                                         {terms.map((term) => {
                                             const termNumber = term.term_number ?? term.installment_number ?? 1;
                                             const isPaid = term.status === 'paid';
@@ -609,53 +620,53 @@ export default function TransactionShow({ invoice }: Props) {
                                             return (
                                                 <div
                                                     key={term.id}
-                                                    className={`flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border bg-white p-3 dark:bg-gray-800 ${
+                                                    className={`flex flex-col justify-between gap-3 rounded-xl border bg-white p-3.5 sm:flex-row sm:items-center ${
                                                         isPaid
-                                                            ? 'border-green-200 dark:border-green-800/40'
+                                                            ? 'border-[#BBF7D0]'
                                                             : isOverdue
-                                                            ? 'border-red-200 dark:border-red-800/40'
-                                                            : 'border-gray-200 dark:border-gray-600'
+                                                            ? 'border-[#FECACA]'
+                                                            : 'border-[#DCE3EC]'
                                                     }`}
                                                 >
                                                     <div className="flex items-start gap-3">
                                                         <div
-                                                            className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold text-white mt-0.5 ${
-                                                                isPaid ? 'bg-green-500' : isOverdue ? 'bg-red-500' : 'bg-slate-400'
+                                                            className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
+                                                                isPaid ? 'bg-[#15803D]' : isOverdue ? 'bg-[#B91C1C]' : 'bg-[#5B6B7F]'
                                                             }`}
                                                         >
                                                             {termNumber}
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="mb-1 flex flex-wrap items-center gap-2">
+                                                                <p className="text-sm font-semibold text-[#162230]">
                                                                     {termNumber === 1
                                                                         ? t('transaction.termDP', { number: termNumber })
                                                                         : t('transaction.termNumber', { number: termNumber })}
                                                                 </p>
                                                                 {isPaid ? (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-2 py-0.5 font-medium">
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#DCFCE7] px-2 py-0.5 text-xs font-semibold text-[#15803D]">
                                                                         <CheckCircle className="h-3 w-3" /> {t('transaction.termPaid')}
                                                                     </span>
                                                                 ) : isOverdue ? (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-xs px-2 py-0.5 font-medium">
-                                                                        <AlertTriangle className="h-3 w-3 text-red-500" /> {t('transaction.termOverdueBadge')}
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FEF2F2] px-2 py-0.5 text-xs font-semibold text-[#B91C1C]">
+                                                                        <AlertTriangle className="h-3 w-3" /> {t('transaction.termOverdueBadge')}
                                                                     </span>
                                                                 ) : (
-                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 text-xs px-2 py-0.5">
+                                                                    <span className="inline-flex items-center gap-1 rounded-full bg-[#FEFCE8] px-2 py-0.5 text-xs font-semibold text-[#A16207]">
                                                                         <Clock className="h-3 w-3" /> {t('transaction.termWaiting')}
                                                                     </span>
                                                                 )}
                                                             </div>
-                                                            <div className="space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                            <div className="space-y-0.5 text-xs text-[#5B6B7F]">
                                                                 {isPaid && paidDateFormatted ? (
-                                                                    <p className="text-green-600 dark:text-green-400">
-                                                                        <CheckCircle className="h-3 w-3 inline-block mr-1 -mt-0.5" />
+                                                                    <p className="font-medium text-[#15803D]">
+                                                                        <CheckCircle className="-mt-0.5 mr-1 inline-block h-3 w-3" />
                                                                         {t('transaction.paidAtDate', { date: paidDateFormatted })}
                                                                         {term.payment_channel && t('transaction.viaChannel', { channel: term.payment_channel })}
                                                                     </p>
                                                                 ) : dueDateFormatted ? (
-                                                                    <p className={isOverdue ? 'text-red-600 dark:text-red-400 font-medium' : ''}>
-                                                                        <CalendarClock className="h-3 w-3 inline-block mr-1 -mt-0.5" />
+                                                                    <p className={isOverdue ? 'font-semibold text-[#B91C1C]' : ''}>
+                                                                        <CalendarClock className="-mt-0.5 mr-1 inline-block h-3 w-3" />
                                                                         {t('transaction.dueDate', { date: dueDateFormatted })}
                                                                     </p>
                                                                 ) : null}
@@ -663,8 +674,8 @@ export default function TransactionShow({ invoice }: Props) {
                                                         </div>
                                                     </div>
 
-                                                    <div className="flex items-center justify-between sm:justify-end gap-3 pl-10 sm:pl-0">
-                                                        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+                                                    <div className="flex items-center justify-between gap-3 pl-10 sm:justify-end sm:pl-0">
+                                                        <span className="text-sm font-bold text-[#12344E] tabular-nums">
                                                             Rp {Number(term.amount).toLocaleString(localeCode)}
                                                         </span>
                                                         {!isPaid && (
@@ -689,10 +700,10 @@ export default function TransactionShow({ invoice }: Props) {
                             )}
 
                             {/* Action Buttons */}
-                            <div className="flex flex-col justify-center gap-4 sm:flex-row flex-wrap">
+                            <div className="flex flex-col flex-wrap justify-center gap-3 pt-2 sm:flex-row">
                                 {invoice.status === 'pending' && !isExpired && invoice.invoice_url && (
                                     <>
-                                        <Button asChild size="lg" className="w-full sm:w-auto">
+                                        <Button asChild size="lg" className="h-11 w-full font-semibold sm:w-auto">
                                             <a href={invoice.invoice_url} target="_blank" rel="noopener noreferrer">
                                                 {isInstallment ? t('transaction.payDPBtn') : t('transaction.continuePayment')}
                                             </a>
@@ -703,7 +714,7 @@ export default function TransactionShow({ invoice }: Props) {
                                                 <Button
                                                     variant="outline"
                                                     size="lg"
-                                                    className="w-full border-red-600 text-red-600 hover:bg-red-50 sm:w-auto"
+                                                    className="h-11 w-full border-[#FECACA] text-[#B91C1C] hover:bg-[#FEF2F2] sm:w-auto"
                                                     disabled={cancelLoading}
                                                 >
                                                     {cancelLoading ? t('transaction.canceling') : t('transaction.cancelOrderBtn')}
@@ -720,7 +731,7 @@ export default function TransactionShow({ invoice }: Props) {
                                                     <AlertDialogCancel>{t('transaction.cancelOrderNo')}</AlertDialogCancel>
                                                     <AlertDialogAction
                                                         onClick={handleCancelConfirm}
-                                                        className="border-red-600 bg-red-600 hover:bg-red-700"
+                                                        className="bg-[#B91C1C] text-white hover:bg-[#991B1B]"
                                                     >
                                                         {t('transaction.cancelOrderYes')}
                                                     </AlertDialogAction>
@@ -731,7 +742,7 @@ export default function TransactionShow({ invoice }: Props) {
                                 )}
 
                                 {canAccessProduct && productInfo && (
-                                    <Button asChild size="lg" className="w-full sm:w-auto bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm">
+                                    <Button asChild size="lg" className="h-11 w-full font-semibold sm:w-auto">
                                         <Link
                                             href={
                                                 productInfo.type === 'bundle'
@@ -752,7 +763,7 @@ export default function TransactionShow({ invoice }: Props) {
                                 )}
 
                                 {(invoice.status === 'paid' || invoice.status === 'completed' || isTerm1Paid) && (
-                                    <Button asChild size="lg" className="w-full sm:w-auto" variant="outline">
+                                    <Button asChild size="lg" className="h-11 w-full sm:w-auto" variant="outline">
                                         <a href={route('invoice.pdf', { id: invoice.id })} target="_blank" rel="noopener noreferrer">
                                             <FileText className="mr-2 h-4 w-4" />
                                             {t('transaction.downloadInvoicePdf')}
@@ -761,7 +772,7 @@ export default function TransactionShow({ invoice }: Props) {
                                 )}
 
                                 {isInstallment && (
-                                    <Button asChild className="w-full sm:w-auto" variant="outline" size="lg">
+                                    <Button asChild className="h-11 w-full sm:w-auto" variant="outline" size="lg">
                                         <Link href={route('profile.installments')}>
                                             <CreditCard className="mr-2 h-4 w-4" />
                                             {t('transaction.manageInstallments')}
@@ -771,14 +782,14 @@ export default function TransactionShow({ invoice }: Props) {
 
                                 {(invoice.status === 'failed' || (!isInstallment && isExpired)) && (
                                     <>
-                                        <Button asChild size="lg" className="w-full sm:w-auto">
+                                        <Button asChild size="lg" className="h-11 w-full sm:w-auto">
                                             <Link href="/">
                                                 <Home className="mr-2 h-4 w-4" /> {t('transaction.backToHome')}
                                             </Link>
                                         </Button>
 
                                         {productInfo && (
-                                            <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
+                                            <Button asChild variant="outline" size="lg" className="h-11 w-full sm:w-auto">
                                                 <Link
                                                     href={
                                                         productInfo.type === 'bundle'
@@ -796,21 +807,21 @@ export default function TransactionShow({ invoice }: Props) {
                                     </>
                                 )}
 
-                                <Button asChild className="w-full sm:w-auto" variant="ghost" size="lg">
+                                <Button asChild className="h-11 w-full sm:w-auto" variant="ghost" size="lg">
                                     <Link href="/profile/transactions">{t('transaction.viewAllTransactions')}</Link>
                                 </Button>
                             </div>
                         </div>
 
                         {/* Customer Service Footer */}
-                        <div className="border-t bg-gray-50 p-4 text-center dark:border-gray-700 dark:bg-gray-800/50">
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                        <div className="border-t border-[#DCE3EC] bg-[#FAF8F4] p-4 text-center">
+                            <p className="text-xs text-[#475569]">
                                 {t('transaction.csNeedHelp')}{' '}
                                 <a
                                     href="https://wa.me/+6289528514480"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="font-medium text-orange-600 hover:underline"
+                                    className="font-semibold text-[#1976D3] hover:underline"
                                 >
                                     {t('transaction.csContact')}
                                 </a>

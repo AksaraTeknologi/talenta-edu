@@ -1,6 +1,4 @@
 import { useState } from 'react';
-import { BadgeCheck, FileText, Info, GraduationCap } from 'lucide-react';
-import { Separator } from '@/components/ui/separator';
 import { useTranslation } from 'react-i18next';
 
 interface CertificationProgram {
@@ -27,87 +25,108 @@ export default function AboutSection({ program }: { program: CertificationProgra
     const [activeTab, setActiveTab] = useState(tabs[0].key);
 
     return (
-        <section className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 mb-8 sm:mb-12 lg:mb-16" id="about">
-            {/* Tabs */}
-            <div className="mb-6 sm:mb-8 overflow-x-auto">
-                <div className="flex justify-start items-start gap-8 md:gap-40 min-w-max">
+        <section className="rounded-2xl border border-[#DCE3EC] bg-white p-5 shadow-xs sm:p-6" id="about">
+            <div className="mb-6 overflow-x-auto border-b border-[#DCE3EC]">
+                <div className="flex min-w-max items-center gap-6">
                     {tabs.map((tab) => (
                         <button
                             key={tab.key}
+                            type="button"
                             onClick={() => setActiveTab(tab.key)}
-                            className={`py-2 text-sm sm:text-base md:text-lg whitespace-nowrap transition ${
+                            className={`min-h-11 border-b-2 px-1 pb-2.5 text-sm font-semibold whitespace-nowrap transition-colors hover:cursor-pointer sm:text-base ${
                                 activeTab === tab.key
-                                    ? 'underline underline-offset-12 md:underline-offset-18 decoration-2 sm:decoration-3 md:decoration-4 text-primary font-medium'
-                                    : 'hover:cursor-pointer hover:text-primary/70'
+                                    ? 'border-[#1976D3] text-[#1976D3]'
+                                    : 'border-transparent text-[#5B6B7F] hover:text-[#12344E]'
                             }`}
                         >
                             {tab.label}
                         </button>
                     ))}
                 </div>
-                <Separator className="mt-0.1 sm:mt-0.5 py-0.4 md:py-0.5 max-w-xs md:max-w-4xl" />
             </div>
 
-            {/* Tab Content */}
             <div>
                 {activeTab === 'description' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                            <Info className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary" />
-                            <p className="font-literata font-medium text-xl sm:text-2xl md:text-3xl">{t('certificationProgram.detail.about.badgeAbout', 'Tentang Program')}</p>
-                        </div>
-                        <p className="mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('certificationProgram.detail.about.badgeAbout', 'Tentang Program')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
                             {t('certificationProgram.detail.about.aboutDesc', 'Gambaran lengkap tentang program ini dan apa yang akan Anda pelajari.')}
                         </p>
-                        <div className="prose prose-sm sm:prose-base max-w-none">
-                            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: program.description || t('certificationProgram.detail.about.noDesc', 'Tidak ada deskripsi tersedia.') }} />
+                        <div className="prose prose-sm max-w-none text-[#475569] sm:prose-base">
+                            <div
+                                className="leading-relaxed"
+                                dangerouslySetInnerHTML={{
+                                    __html: program.description || t('certificationProgram.detail.about.noDesc', 'Tidak ada deskripsi tersedia.'),
+                                }}
+                            />
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {activeTab === 'benefits' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                            <BadgeCheck className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary" />
-                            <p className="font-literata font-medium text-xl sm:text-2xl md:text-3xl">{t('certificationProgram.detail.about.badgeBenefits', 'Manfaat Program')}</p>
-                        </div>
-                        <p className="mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                            {t('certificationProgram.detail.about.benefitsDesc', 'Berbagai manfaat dan keuntungan yang akan Anda dapatkan setelah mengikuti program ini.')}
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('certificationProgram.detail.about.badgeBenefits', 'Manfaat Program')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
+                            {t(
+                                'certificationProgram.detail.about.benefitsDesc',
+                                'Berbagai manfaat dan keuntungan yang akan Anda dapatkan setelah mengikuti program ini.',
+                            )}
                         </p>
-                        <div className="prose prose-sm sm:prose-base max-w-none">
-                            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: program.benefits || t('certificationProgram.detail.about.noBenefits', 'Tidak ada manfaat tersedia.') }} />
+                        <div className="prose prose-sm max-w-none text-[#475569] sm:prose-base">
+                            <div
+                                className="leading-relaxed"
+                                dangerouslySetInnerHTML={{
+                                    __html: program.benefits || t('certificationProgram.detail.about.noBenefits', 'Tidak ada manfaat tersedia.'),
+                                }}
+                            />
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {activeTab === 'terms_conditions' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                            <FileText className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary" />
-                            <p className="font-literata font-medium text-xl sm:text-2xl md:text-3xl">{t('certificationProgram.detail.about.badgeTerms', 'Syarat & Ketentuan')}</p>
-                        </div>
-                        <p className="mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('certificationProgram.detail.about.badgeTerms', 'Syarat & Ketentuan')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
                             {t('certificationProgram.detail.about.termsDesc', 'Persyaratan yang perlu Anda penuhi sebelum mengikuti program ini.')}
                         </p>
-                        <div className="prose prose-sm sm:prose-base max-w-none">
-                            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: program.terms_conditions || t('certificationProgram.detail.about.noTerms', 'Tidak ada syarat dan ketentuan khusus.') }} />
+                        <div className="prose prose-sm max-w-none text-[#475569] sm:prose-base">
+                            <div
+                                className="leading-relaxed"
+                                dangerouslySetInnerHTML={{
+                                    __html:
+                                        program.terms_conditions ||
+                                        t('certificationProgram.detail.about.noTerms', 'Tidak ada syarat dan ketentuan khusus.'),
+                                }}
+                            />
                         </div>
-                    </>
+                    </div>
                 )}
 
                 {activeTab === 'scholarship_flow' && (
-                    <>
-                        <div className="flex items-center gap-2 mb-3 sm:mb-4">
-                            <GraduationCap className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary" />
-                            <p className="font-literata font-medium text-xl sm:text-2xl md:text-3xl">{t('certificationProgram.detail.about.badgeScholarshipFlow', 'Alur Beasiswa')}</p>
-                        </div>
-                        <p className="mb-6 sm:mb-8 text-sm sm:text-base text-gray-600 dark:text-gray-400">
+                    <div>
+                        <h2 className="font-literata text-xl font-bold text-[#12344E] sm:text-2xl">
+                            {t('certificationProgram.detail.about.badgeScholarshipFlow', 'Alur Beasiswa')}
+                        </h2>
+                        <p className="mt-1.5 mb-5 text-sm text-[#5B6B7F]">
                             {t('certificationProgram.detail.about.scholarshipFlowDesc', 'Tahapan alur proses pendaftaran beasiswa untuk program ini.')}
                         </p>
-                        <div className="prose prose-sm sm:prose-base max-w-none">
-                            <div className="text-sm sm:text-base text-gray-700 dark:text-gray-300 leading-relaxed" dangerouslySetInnerHTML={{ __html: program.scholarship_flow || t('certificationProgram.detail.about.noScholarshipFlow', 'Tidak ada informasi alur beasiswa.') }} />
+                        <div className="prose prose-sm max-w-none text-[#475569] sm:prose-base">
+                            <div
+                                className="leading-relaxed"
+                                dangerouslySetInnerHTML={{
+                                    __html:
+                                        program.scholarship_flow ||
+                                        t('certificationProgram.detail.about.noScholarshipFlow', 'Tidak ada informasi alur beasiswa.'),
+                                }}
+                            />
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
         </section>

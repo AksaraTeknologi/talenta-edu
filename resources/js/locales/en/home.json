@@ -60,12 +60,24 @@
     "badge": "Tools & Frameworks",
     "title": "Up-to-date tools & frameworks used"
   },
+  "hero": {
+    "eyebrow": "Talenta Academy • Tax & Accounting Training",
+    "title": "Master Taxation, Brevet, and Practical Job-Ready Accounting",
+    "subtitle": "Practice-based tax brevet, accounting, auditing, plus Accurate and Zahir training guided directly by experienced practitioners for students, fresh graduates, and finance staff.",
+    "ctaPrimary": "Explore Training Schedule",
+    "ctaSecondary": "WhatsApp Consultation"
+  },
   "latest": {
     "badge": "Latest Products",
     "recentTraining": "Latest Training",
+    "catalogLabel": "Program Catalog",
     "title": "Latest Courses, Bootcamps, Webinars, Private & Bundles from Talenta Academy",
     "popularTitle": "Most Popular Classes",
     "popularDesc": "Upgrade your knowledge and skills here",
+    "viewAll": "View All Programs",
+    "exploreMoreTitle": "Looking for more schedules or topics?",
+    "exploreMoreDesc": "Browse all upcoming bootcamps, webinars, and online courses tailored to your career goals.",
+    "viewAllBootcamp": "View All Bootcamps",
     "empty": "No products are currently available.",
     "allOwned": "You already have access to all our latest products! 😁🙏",
     "thankYou": "Thank you for being part of Talenta Academy!",
@@ -75,6 +87,11 @@
     "registerBefore": "Register within {{days}} days",
     "registrationClosed": "Registration closed",
     "registerUntil": "Register until {{date}}",
+    "closingSoon_one": "Registration closes in {{count}} day",
+    "closingSoon_other": "Registration closes in {{count}} days",
+    "resultCount_one": "{{count}} program",
+    "resultCount_other": "{{count}} programs",
+    "resetFilter": "Reset filters",
     "viewMore": "View More...",
     "registeredMentors": "{{count}} registered mentors",
     "noBio": "No bio available",
@@ -98,6 +115,8 @@
   },
   "mentor": {
     "title": "Meet Our Mentor",
+    "subtitle": "Learn directly from certified tax consultants and experienced accounting practitioners across Indonesia.",
+    "viewAll": "View All Mentors",
     "badge": "MENTOR",
     "roleTax": "Tax Mentor"
   },
@@ -106,11 +125,16 @@
   },
   "testimony": {
     "title": "What They Say",
-    "subtitle": "What our customers say about us"
+    "subtitle": "What our customers say about us",
+    "viewAll": "All Testimonials",
+    "showMore": "Show More",
+    "showLess": "Show Less"
   },
   "faq": {
     "title": "Frequently Asked Questions",
-    "description": "Learning tax, brevet, or accounting can be confusing, especially with so much technical material! Have questions about webinars, online classes, or tax and accounting certification?",
+    "description": "Learning taxation, brevet, or accounting can feel technical at first. Find quick answers about our webinars, online courses, and certification programs here.",
+    "helpTitle": "Still have questions?",
+    "helpDesc": "Our team is ready to help recommend the right training program for your career goals.",
     "q1": "What is Talenta Academy?",
     "a1": "Talenta Academy is a professional training institution focused on developing competencies in accounting, taxation, auditing, and accounting software, etc. with a practical and applicable approach.",
     "q2": "What are the features and programs at Talenta Academy?",

@@ -209,17 +209,17 @@ export default function InstallmentOptions({
     // JIKA CICILAN SUDAH LUNAS SEMUA
     if (isFullyPaid) {
         return (
-            <div className="space-y-4 rounded-xl border border-green-200 bg-green-50/50 p-5 text-center dark:border-green-900/50 dark:bg-green-950/20">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50">
-                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="space-y-4 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-5 text-center">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-[#DCFCE7]">
+                    <CheckCircle2 className="h-6 w-6 text-[#15803D]" />
                 </div>
                 <div>
-                    <h4 className="font-semibold text-foreground text-base">Semua Cicilan Telah Lunas!</h4>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <h4 className="font-literata text-base font-bold text-[#12344E]">Semua Cicilan Telah Lunas!</h4>
+                    <p className="mt-1 text-xs leading-relaxed text-[#475569]">
                         Anda telah menyelesaikan seluruh {activeInstallment?.total_terms} termin pembayaran untuk program ini.
                     </p>
                 </div>
-                <Button asChild className="w-full bg-green-600 hover:bg-green-700 text-white">
+                <Button asChild size="lg" className="w-full bg-[#15803D] text-white hover:bg-[#166534]">
                     <a href="/profile/dashboard">Lihat di Dashboard</a>
                 </Button>
             </div>
@@ -231,11 +231,11 @@ export default function InstallmentOptions({
         return (
             <div className="space-y-4">
                 {/* Banner Info Cicilan Aktif */}
-                <div className="rounded-lg border border-blue-200 bg-blue-50/80 p-3.5 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-200 flex items-start gap-2.5">
-                    <Sparkles className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2.5 rounded-xl border border-[#BFDBFE] bg-[#EAF3FC] p-3.5 text-xs text-[#12344E]">
+                    <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-[#1976D3]" />
                     <div>
                         <p className="font-semibold">Cicilan Aktif Terdeteksi ({activeInstallment.invoice_code})</p>
-                        <p className="mt-0.5 opacity-90">
+                        <p className="mt-0.5 leading-relaxed text-[#475569]">
                             Anda telah membayar <strong>{activeInstallment.paid_terms} dari {activeInstallment.total_terms}</strong> termin. Silakan lanjutkan pembayaran untuk termin berikutnya.
                         </p>
                     </div>
@@ -243,21 +243,21 @@ export default function InstallmentOptions({
 
                 {/* Summary Tagihan Berikutnya & Sisa */}
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="rounded-lg bg-card border-2 border-primary/40 p-3.5 shadow-sm">
-                        <p className="text-xs font-medium text-primary mb-1">Tagihan Termin ke-{nextTerm.term_number}</p>
-                        <p className="font-bold text-primary text-xl">{rupiahFormatter.format(nextTerm.amount)}</p>
+                    <div className="rounded-xl border border-[#93C5FD] bg-[#FAF8F4] p-3.5">
+                        <p className="mb-1 text-xs font-medium text-[#155FA8]">Tagihan Termin ke-{nextTerm.term_number}</p>
+                        <p className="font-literata text-xl font-bold text-[#12344E] tabular-nums">{rupiahFormatter.format(nextTerm.amount)}</p>
                     </div>
-                    <div className="rounded-lg bg-card border border-border p-3.5 shadow-sm">
-                        <p className="text-xs text-muted-foreground mb-1">Sisa Pembayaran</p>
-                        <p className="font-bold text-foreground text-xl">{rupiahFormatter.format(remainingAmount)}</p>
+                    <div className="rounded-xl border border-[#DCE3EC] bg-white p-3.5">
+                        <p className="mb-1 text-xs text-[#5B6B7F]">Sisa Pembayaran</p>
+                        <p className="font-literata text-xl font-bold text-[#162230] tabular-nums">{rupiahFormatter.format(remainingAmount)}</p>
                     </div>
                 </div>
 
                 {/* Daftar Status Termin */}
-                <div className="space-y-2.5 rounded-lg border border-border bg-card p-4">
-                    <div className="flex items-center justify-between pb-1 border-b border-border">
-                        <span className="text-xs font-semibold text-foreground">Status Pembayaran Termin</span>
-                        <Badge variant="outline" className="text-[11px] bg-primary/10 text-primary border-primary/20">
+                <div className="space-y-2.5 rounded-xl border border-[#DCE3EC] bg-white p-4">
+                    <div className="flex items-center justify-between border-b border-[#DCE3EC] pb-2">
+                        <span className="text-xs font-semibold text-[#12344E]">Status Pembayaran Termin</span>
+                        <Badge variant="outline" className="border-[#BFDBFE] bg-[#EAF3FC] text-[11px] font-semibold text-[#155FA8]">
                             {activeInstallment.total_terms}x Termin
                         </Badge>
                     </div>
@@ -270,47 +270,47 @@ export default function InstallmentOptions({
                             return (
                                 <div
                                     key={term.id}
-                                    className={`flex items-center justify-between gap-3 rounded-md p-2.5 text-xs transition-all ${
+                                    className={`flex items-center justify-between gap-3 rounded-lg p-2.5 text-xs transition-colors ${
                                         isPaid
-                                            ? 'bg-green-50/70 border border-green-200 dark:bg-green-950/20 dark:border-green-900/40'
+                                            ? 'border border-[#BBF7D0] bg-[#F0FDF4]'
                                             : isCurrent
-                                              ? 'bg-primary/5 border-2 border-primary/50 shadow-sm'
-                                              : 'bg-muted/40 border border-transparent opacity-60'
+                                              ? 'border border-[#1976D3] bg-[#EAF3FC]/60'
+                                              : 'border border-[#DCE3EC] bg-[#FAF8F4] opacity-75'
                                     }`}
                                 >
                                     <div className="flex items-center gap-2.5">
                                         <div
-                                            className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                                            className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                                                 isPaid
-                                                    ? 'bg-green-600 text-white'
+                                                    ? 'bg-[#15803D] text-white'
                                                     : isCurrent
-                                                      ? 'bg-primary text-primary-foreground'
-                                                      : 'bg-muted-foreground/20 text-muted-foreground'
+                                                      ? 'bg-[#1976D3] text-white'
+                                                      : 'bg-[#DCE3EC] text-[#475569]'
                                             }`}
                                         >
                                             {isPaid ? <CheckCircle2 className="h-4 w-4" /> : term.term_number}
                                         </div>
                                         <div>
-                                            <p className="font-medium text-foreground flex items-center gap-1.5">
+                                            <p className="flex items-center gap-1.5 font-medium text-[#162230]">
                                                 {term.term_number === 1 ? 'Termin 1 (DP)' : `Termin ke-${term.term_number}`}
                                                 {isPaid && (
-                                                    <span className="text-[10px] font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/40 px-1.5 py-0.5 rounded">
+                                                    <span className="rounded bg-[#DCFCE7] px-1.5 py-0.5 text-[10px] font-semibold text-[#15803D]">
                                                         Lunas
                                                     </span>
                                                 )}
                                                 {isCurrent && (
-                                                    <span className="text-[10px] font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                                                    <span className="rounded bg-[#EAF3FC] px-1.5 py-0.5 text-[10px] font-semibold text-[#155FA8]">
                                                         Bayar Sekarang
                                                     </span>
                                                 )}
                                             </p>
-                                            <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                            <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[#5B6B7F]">
                                                 <Clock className="h-3 w-3" />
                                                 {term.due_date ? `Jatuh tempo: ${formatDateSafe(term.due_date)}` : '-'}
                                             </p>
                                         </div>
                                     </div>
-                                    <span className={`font-semibold ${isPaid ? 'text-green-700 dark:text-green-400 line-through' : 'text-foreground'}`}>
+                                    <span className={`font-semibold tabular-nums ${isPaid ? 'text-[#15803D] line-through' : 'text-[#162230]'}`}>
                                         {rupiahFormatter.format(term.amount)}
                                     </span>
                                 </div>
@@ -320,8 +320,8 @@ export default function InstallmentOptions({
                 </div>
 
                 {nextTerm.is_overdue && (
-                    <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-900 dark:bg-amber-950/30 dark:border-amber-900 dark:text-amber-200 flex items-start gap-2">
-                        <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="flex items-start gap-2 rounded-xl border border-[#FDE68A] bg-[#FEFCE8] p-3 text-xs text-[#854D0E]">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#A16207]" />
                         <span>Batas waktu pembayaran telah melewati jatuh tempo. Silakan hubungi admin jika pembayaran online tidak dapat diproses.</span>
                     </div>
                 )}
@@ -329,7 +329,7 @@ export default function InstallmentOptions({
                 {/* Tombol Pembayaran Termin Selanjutnya */}
                 <Button
                     type="button"
-                    className="w-full gap-2"
+                    className="h-12 w-full gap-2 font-semibold"
                     size="lg"
                     onClick={handlePayNextTerm}
                     disabled={isLoading || nextTerm.is_overdue}
@@ -349,17 +349,17 @@ export default function InstallmentOptions({
         <div className="space-y-4">
             {/* Banner Login Diperlukan untuk Guest */}
             {!auth?.user && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50/80 p-3.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200 flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-3 rounded-xl border border-[#FDE68A] bg-[#FEFCE8] p-3.5 text-xs text-[#854D0E]">
                     <div className="flex items-start gap-2.5">
-                        <LogIn className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                        <LogIn className="mt-0.5 h-4 w-4 shrink-0 text-[#A16207]" />
                         <div>
                             <p className="font-semibold">Login Diperlukan</p>
-                            <p className="mt-0.5 opacity-90 leading-relaxed">
+                            <p className="mt-0.5 leading-relaxed">
                                 Silakan login terlebih dahulu untuk melanjutkan pembayaran cicilan.
                             </p>
                         </div>
                     </div>
-                    <Button asChild size="sm" variant="outline" className="shrink-0 border-amber-300 bg-white hover:bg-amber-100 text-amber-900 dark:bg-amber-900/30 dark:text-amber-100">
+                    <Button asChild size="sm" variant="outline" className="shrink-0 border-[#F59E0B] bg-white text-[#854D0E] hover:bg-[#FEF3C7]">
                         <a href={`/login?redirect=${encodeURIComponent(typeof window !== 'undefined' ? window.location.pathname : '/')}`}>
                             Login
                         </a>
@@ -369,11 +369,11 @@ export default function InstallmentOptions({
 
             {/* Banner Overdue / Cicilan Ditutup */}
             {isAnyTermOverdue && (
-                <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3.5 text-xs text-destructive dark:text-red-400 flex items-start gap-2.5">
-                    <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div className="flex items-start gap-2.5 rounded-xl border border-[#FECACA] bg-[#FEF2F2] p-3.5 text-xs text-[#B91C1C]">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                     <div>
                         <p className="font-semibold">Pendaftaran Cicilan Ditutup</p>
-                        <p className="mt-0.5 opacity-90 leading-relaxed">
+                        <p className="mt-0.5 leading-relaxed">
                             Batas waktu pembayaran termin telah terlewat. Anda tidak dapat lagi mendaftar menggunakan opsi cicilan untuk program ini. Silakan gunakan opsi pembayaran penuh jika pendaftaran masih dibuka.
                         </p>
                     </div>
@@ -381,27 +381,27 @@ export default function InstallmentOptions({
             )}
             {/* Summary DP & Total */}
             <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg bg-card border border-border p-3.5 shadow-sm">
-                    <p className="text-xs text-muted-foreground mb-1">Bayar Sekarang (DP)</p>
-                    <p className="font-bold text-primary text-xl">{rupiahFormatter.format(dpAmount)}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                <div className="rounded-xl border border-[#93C5FD] bg-[#FAF8F4] p-3.5">
+                    <p className="mb-1 text-xs font-medium text-[#155FA8]">Bayar Sekarang (DP)</p>
+                    <p className="font-literata text-xl font-bold text-[#12344E] tabular-nums">{rupiahFormatter.format(dpAmount)}</p>
+                    <p className="mt-0.5 text-[11px] text-[#5B6B7F]">
                         {rupiahFormatter.format(baseDpAmount)} + Admin Rp 5.000
                     </p>
                 </div>
-                <div className="rounded-lg bg-card border border-border p-3.5 shadow-sm">
-                    <p className="text-xs text-muted-foreground mb-1">Total Keseluruhan</p>
-                    <p className="font-bold text-foreground text-xl">{rupiahFormatter.format(totalAmount)}</p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                <div className="rounded-xl border border-[#DCE3EC] bg-white p-3.5">
+                    <p className="mb-1 text-xs text-[#5B6B7F]">Total Keseluruhan</p>
+                    <p className="font-literata text-xl font-bold text-[#162230] tabular-nums">{rupiahFormatter.format(totalAmount)}</p>
+                    <p className="mt-0.5 text-[11px] text-[#5B6B7F]">
                         Termasuk admin {terms.length}x transaksi
                     </p>
                 </div>
             </div>
 
             {/* Jadwal Pembayaran */}
-            <div className="space-y-2.5 rounded-lg border border-border bg-card p-4">
-                <div className="flex items-center justify-between pb-1 border-b border-border">
-                    <span className="text-xs font-semibold text-foreground">Jadwal Pembayaran Cicilan</span>
-                    <Badge variant="outline" className="text-[11px] bg-primary/10 text-primary border-primary/20">
+            <div className="space-y-2.5 rounded-xl border border-[#DCE3EC] bg-white p-4">
+                <div className="flex items-center justify-between border-b border-[#DCE3EC] pb-2">
+                    <span className="text-xs font-semibold text-[#12344E]">Jadwal Pembayaran Cicilan</span>
+                    <Badge variant="outline" className="border-[#BFDBFE] bg-[#EAF3FC] text-[11px] font-semibold text-[#155FA8]">
                         {terms.length}x Termin
                     </Badge>
                 </div>
@@ -410,18 +410,18 @@ export default function InstallmentOptions({
                     {terms.map((term, i) => {
                         const termGross = Number(term.amount) + ADMIN_FEE;
                         return (
-                            <div key={i} className="flex items-center justify-between gap-3 rounded-md bg-muted/40 p-2.5 text-xs">
+                            <div key={i} className="flex items-center justify-between gap-3 rounded-lg border border-[#DCE3EC] bg-[#FAF8F4] p-2.5 text-xs">
                                 <div className="flex items-center gap-2.5">
                                     <div
-                                        className={`flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
-                                            i === 0 ? 'bg-primary text-primary-foreground' : 'bg-muted-foreground/20 text-muted-foreground'
+                                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
+                                            i === 0 ? 'bg-[#1976D3] text-white' : 'bg-[#DCE3EC] text-[#475569]'
                                         }`}
                                     >
                                         {term.term_number}
                                     </div>
                                     <div>
-                                        <p className="font-medium text-foreground">{i === 0 ? 'Termin 1 (DP)' : `Termin ke-${term.term_number}`}</p>
-                                        <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                        <p className="font-medium text-[#162230]">{i === 0 ? 'Termin 1 (DP)' : `Termin ke-${term.term_number}`}</p>
+                                        <p className="mt-0.5 flex items-center gap-1 text-[11px] text-[#5B6B7F]">
                                             <Clock className="h-3 w-3" />
                                             {isCourse
                                                 ? (i === 0 ? 'Hari ini (saat pendaftaran)' : `${i * 30} hari setelah pendaftaran`)
@@ -429,9 +429,9 @@ export default function InstallmentOptions({
                                         </p>
                                     </div>
                                 </div>
-                                <div className="text-right flex-shrink-0">
-                                    <span className="font-semibold text-foreground">{rupiahFormatter.format(termGross)}</span>
-                                    <p className="text-[10px] text-muted-foreground">
+                                <div className="shrink-0 text-right">
+                                    <span className="font-semibold text-[#162230] tabular-nums">{rupiahFormatter.format(termGross)}</span>
+                                    <p className="text-[10px] text-[#5B6B7F]">
                                         {rupiahFormatter.format(term.amount)} + Admin Rp 5.000
                                     </p>
                                 </div>
@@ -442,41 +442,42 @@ export default function InstallmentOptions({
             </div>
 
             {/* Ketentuan Cicilan */}
-            <div className="rounded-lg bg-muted/30 border border-border p-3 space-y-1.5 text-xs text-muted-foreground">
+            <div className="space-y-1.5 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-3 text-xs text-[#475569]">
                 <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#1976D3]" />
                     <span>Setiap transaksi termin dikenakan biaya admin Rp 5.000.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#15803D]" />
                     <span>Akses materi/program langsung aktif segera setelah DP dibayar.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#15803D]" />
                     <span>Voucher promo dan poin reward tidak dapat digunakan pada pembayaran cicilan.</span>
                 </div>
                 <div className="flex items-start gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#A16207]" />
                     <span>Akses akan ditangguhkan jika cicilan melewati tanggal jatuh tempo.</span>
                 </div>
             </div>
 
             {/* Checkbox Syarat & Ketentuan */}
             {onTermsAcceptedChange && (
-                <div className="flex items-center gap-3 pt-1">
+                <div className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-3">
                     <Checkbox
                         disabled={isAnyTermOverdue}
                         id="installment-terms-checkbox"
                         checked={termsAccepted}
                         onCheckedChange={(checked) => onTermsAcceptedChange(checked === true)}
+                        className="mt-0.5"
                     />
-                    <Label htmlFor="installment-terms-checkbox" className="text-xs cursor-pointer">
+                    <Label htmlFor="installment-terms-checkbox" className="cursor-pointer text-xs leading-relaxed text-[#475569]">
                         Saya menyetujui{' '}
                         <a
                             href="/terms-and-conditions"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-primary hover:underline"
+                            className="font-semibold text-[#1976D3] hover:underline"
                         >
                             syarat dan ketentuan cicilan
                         </a>
@@ -487,7 +488,7 @@ export default function InstallmentOptions({
             {/* Tombol Pembayaran DP */}
             <Button
                 type="button"
-                className="w-full gap-2"
+                className="h-12 w-full gap-2 font-semibold"
                 size="lg"
                 onClick={handlePayInstallment}
                 disabled={isLoading || (termsAccepted !== undefined && !termsAccepted) || isAnyTermOverdue}
@@ -496,6 +497,11 @@ export default function InstallmentOptions({
                 <CreditCard className="h-4 w-4" />
                 {isAnyTermOverdue ? 'Opsi Cicilan Ditutup (Batas Waktu Terlewat)' : isLoading ? 'Memproses...' : `Bayar DP ${rupiahFormatter.format(dpAmount)} (Termasuk Biaya Admin)`}
             </Button>
+            {termsAccepted === false && !isAnyTermOverdue && !isLoading && (
+                <p className="text-center text-xs text-[#5B6B7F]">
+                    Centang persetujuan syarat dan ketentuan cicilan di atas untuk melanjutkan.
+                </p>
+            )}
         </div>
     );
 }

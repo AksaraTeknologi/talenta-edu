@@ -60,12 +60,24 @@
     "badge": "Tools & Framework",
     "title": "Tools up-to-date yang digunakan"
   },
+  "hero": {
+    "eyebrow": "Talenta Academy • Pelatihan Pajak & Akuntansi",
+    "title": "Kuasai Perpajakan, Brevet, dan Akuntansi Praktis Siap Kerja",
+    "subtitle": "Pelatihan brevet pajak, akuntansi, audit, serta Accurate dan Zahir yang dibimbing langsung oleh praktisi berpengalaman untuk mahasiswa, fresh graduate, dan staf keuangan.",
+    "ctaPrimary": "Lihat Jadwal Pelatihan",
+    "ctaSecondary": "Konsultasi WhatsApp"
+  },
   "latest": {
     "badge": "Produk Terbaru",
     "recentTraining": "Pelatihan Terbaru",
+    "catalogLabel": "Katalog Program",
     "title": "Kelas, Bootcamp, Webinar, Private & Bundling Terbaru dari Talenta Academy",
     "popularTitle": "Kelas Terpopuler",
     "popularDesc": "Tingkatkan pengetahuan dan keterampilan kamu disini",
+    "viewAll": "Lihat Semua Program",
+    "exploreMoreTitle": "Masih mencari jadwal atau topik lain?",
+    "exploreMoreDesc": "Jelajahi seluruh jadwal bootcamp, webinar, dan kelas online sesuai kebutuhan kariermu.",
+    "viewAllBootcamp": "Lihat Semua Bootcamp",
     "empty": "Belum ada produk yang tersedia saat ini.",
     "allOwned": "Anda sudah memiliki akses semua produk terbaru kami. 😁🙏",
     "thankYou": "Terima kasih telah menjadi bagian dari Talenta Academy!",
@@ -75,6 +87,9 @@
     "registerBefore": "Daftar sebelum {{days}} hari lagi",
     "registrationClosed": "Pendaftaran ditutup",
     "registerUntil": "Daftar s/d {{date}}",
+    "closingSoon": "Pendaftaran tutup {{count}} hari lagi",
+    "resultCount": "{{count}} program",
+    "resetFilter": "Reset filter",
     "viewMore": "Lihat Selengkapnya...",
     "registeredMentors": "{{count}} mentor terdaftar",
     "noBio": "Tidak ada bio",
@@ -98,6 +113,8 @@
   },
   "mentor": {
     "title": "Meet Our Mentor",
+    "subtitle": "Belajar langsung dari konsultan pajak bersertifikat dan praktisi akuntansi yang berpengalaman di industri.",
+    "viewAll": "Lihat Semua Mentor",
     "badge": "MENTOR",
     "roleTax": "Mentor Perpajakan"
   },
@@ -106,14 +123,19 @@
   },
   "testimony": {
     "title": "Apa Kata Mereka?",
-    "subtitle": "What our costumers say about us"
+    "subtitle": "Apa kata alumni tentang kami",
+    "viewAll": "Semua Testimoni",
+    "showMore": "Tampilkan Lebih Banyak",
+    "showLess": "Tampilkan Lebih Sedikit"
   },
   "faq": {
-    "title": "Pertanyaan yang sering ditanyakan",
-    "description": "Belajar pajak, brevet, atau akuntansi kadang bikin bingung sendiri, apalagi kalau materinya banyak dan teknis banget! Punya pertanyaan seputar webinar, kelas online, atau sertifikasi pajak dan akuntansi?",
-    "q1": "Apa itu Talenta Academy ? ",
-    "a1": "Talenta Academy adalah lembaga pelatihan profesional yang fokus pada pengembangan kompetensi di bidang akuntansi, perpajakan, audit, dan software akuntansi, dll dengan pendekatan praktis dan aplikatif",
-    "q2": "Apa Saja Fitur dan di Talenta Academy ?",
+    "title": "Pertanyaan yang Sering Ditanyakan",
+    "description": "Belajar pajak, brevet, atau akuntansi kadang membingungkan jika materinya terlalu teknis. Temukan jawaban seputar webinar, kelas online, atau sertifikasi kami di sini.",
+    "helpTitle": "Masih ada pertanyaan lain?",
+    "helpDesc": "Tim kami siap membantu merekomendasikan pelatihan yang paling sesuai dengan tujuan kariermu.",
+    "q1": "Apa itu Talenta Academy?",
+    "a1": "Talenta Academy adalah lembaga pelatihan profesional yang fokus pada pengembangan kompetensi di bidang akuntansi, perpajakan, audit, dan software akuntansi dengan pendekatan praktis dan aplikatif.",
+    "q2": "Apa saja program belajar di Talenta Academy?",
     "a2": "Talenta Academy menyediakan berbagai program pembelajaran seperti Kelas Online, Bootcamp, serta pelatihan berbasis Webinar. Setiap program dirancang secara interaktif dan aplikatif untuk membantu peserta mengembangkan keterampilan secara optimal dan siap diterapkan di dunia kerja.",
     "q3": "Bagaimana alur belajar di Talenta?",
     "a3": "Pendaftaran dapat dilakukan melalui website resmi Talenta Academy atau dengan menghubungi admin melalui WhatsApp yang tersedia di website atau DM di IG @brevetpajak_talenta.",

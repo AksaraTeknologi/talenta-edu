@@ -45,7 +45,7 @@ i18n
       escapeValue: false,
     },
     detection: {
-      order: ['cookie', 'localStorage', 'navigator'],
+      order: ['cookie', 'localStorage'],
       lookupCookie: 'locale',
       lookupLocalStorage: 'locale',
       caches: ['cookie', 'localStorage'],

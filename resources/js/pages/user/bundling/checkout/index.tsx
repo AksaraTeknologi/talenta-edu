@@ -1,22 +1,24 @@
 import { parseISO } from 'date-fns';
+import { CheckoutHeader } from '@/components/checkout-header';
 import InputError from '@/components/input-error';
 import InstallmentOptions, { ActiveInstallmentData, InstallmentTermOption } from '@/components/installment-options';
+import { PaymentStatusCard } from '@/components/payment-status-card';
+import { ProgramBadge } from '@/components/program-badge';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
 import { Toaster } from '@/components/ui/sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import UserLayout from '@/layouts/user-layout';
-import { rupiahFormatter } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { resolveStorageUrl, rupiahFormatter } from '@/lib/utils';
 import { SharedData } from '@/types';
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import axios from 'axios';
-import { motion } from 'framer-motion';
-import { BadgeCheck, Calendar, Check, CreditCard, Gift, Hourglass, LoaderCircle, Package, Play, RefreshCw, Shield, Tag, User, X } from 'lucide-react';
+import { BadgeCheck, Calendar, Check, ChevronDown, CreditCard, Gift, LoaderCircle, Package, Play, RefreshCw, Shield, Tag, User, X } from 'lucide-react';
 import { FormEventHandler, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -196,6 +198,7 @@ export default function CheckoutBundle({
     const [showPassword, setShowPassword] = useState(false);
 
     const [promoCode, setPromoCode] = useState('');
+    const [promoOpen, setPromoOpen] = useState(false);
     const [promoLoading, setPromoLoading] = useState(false);
     const [promoError, setPromoError] = useState('');
     const [discountData, setDiscountData] = useState<DiscountData | null>(null);
@@ -685,221 +688,118 @@ export default function CheckoutBundle({
 
     if (isLoggedIn && !isProfileComplete) {
         return (
-            <UserLayout>
+            <div className="min-h-screen bg-[#FAF8F4]">
                 <Head title={t('bundling.checkout.incompleteProfileTitle', 'Lengkapi Profil')} />
-
-                <section className="relative overflow-hidden bg-gradient-to-br from-orange-600 via-orange-700 to-red-700 px-4 py-16">
-                    <div className="bg-grid-white/[0.05] absolute inset-0 bg-[size:20px_20px]" />
-                    <div className="absolute top-0 left-0 h-96 w-96 -translate-x-1/2 -translate-y-1/2 rounded-full bg-orange-400/30 blur-3xl" />
-                    <div className="absolute right-0 bottom-0 h-96 w-96 translate-x-1/2 translate-y-1/2 rounded-full bg-red-400/30 blur-3xl" />
-
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto max-w-4xl text-center">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: 0.1 }}
-                            className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur-sm"
-                        >
-                            <User className="h-4 w-4 text-white" />
-                            <span className="text-sm font-medium text-white">
-                                {t('bundling.checkout.incompleteProfileTitle', 'Profil Belum Lengkap')}
-                            </span>
-                        </motion.div>
-
-                        <motion.h1
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="mb-4 text-3xl font-bold text-white sm:text-4xl lg:text-5xl"
-                        >
-                            {bundle.title}
-                        </motion.h1>
-
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="text-lg text-orange-100"
-                        >
-                            {t('bundling.checkout.incompleteProfileDesc', 'Lengkapi profil Anda terlebih dahulu untuk melanjutkan')}
-                        </motion.p>
-                    </motion.div>
+                <CheckoutHeader backHref={`/bundle/${bundle.slug}`} />
+                <section className="flex min-h-[calc(100vh-4rem)] items-center justify-center px-4 py-12">
+                    <div className="w-full max-w-md rounded-2xl border border-[#DCE3EC] bg-white p-8 text-center shadow-sm">
+                        <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#FFF3EB]">
+                            <User className="h-7 w-7 text-[#D95B16]" />
+                        </div>
+                        <h1 className="font-literata mb-2 text-2xl font-bold text-[#12344E]">
+                            {t('bundling.checkout.incompleteProfileTitle', 'Profil Belum Lengkap')}
+                        </h1>
+                        <p className="mb-6 text-sm leading-relaxed text-[#475569]">
+                            {t(
+                                'bundling.checkout.incompleteProfileDesc',
+                                'Kami memerlukan nomor telepon, instansi, dan kota domisili Anda untuk melanjutkan pendaftaran paket bundling ini.',
+                            )}
+                        </p>
+                        <Button asChild size="lg" className="h-11 w-full font-semibold">
+                            <Link href={route('profile.edit', { redirect: window.location.href })}>
+                                <User className="mr-2 h-4 w-4" />
+                                {t('bundling.checkout.btnCompleteProfile', 'Lengkapi Profil Sekarang')}
+                            </Link>
+                        </Button>
+                    </div>
                 </section>
-
-                <section className="mx-auto my-8 w-full max-w-2xl px-4">
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                        <Card className="overflow-hidden border-2">
-                            <div className="bg-gradient-to-br from-orange-50 to-red-50 p-8 dark:from-orange-950/20 dark:to-red-950/20">
-                                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-red-600 shadow-lg">
-                                    <User className="h-10 w-10 text-white" />
-                                </div>
-
-                                <h2 className="mb-3 text-center text-2xl font-bold">
-                                    {t('bundling.checkout.incompleteProfileTitle', 'Lengkapi Profil Anda')}
-                                </h2>
-                                <p className="mb-6 text-center text-gray-600 dark:text-gray-400">
-                                    {t(
-                                        'bundling.checkout.incompleteProfileDesc',
-                                        'Kami memerlukan nomor telepon, instansi, dan kota domisili Anda untuk melanjutkan pendaftaran paket bundling ini.'
-                                    )}
-                                </p>
-
-                                <Button
-                                    asChild
-                                    size="lg"
-                                    className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-                                >
-                                    <Link href={route('profile.edit', { redirect: window.location.href })}>
-                                        <User className="mr-2 h-4 w-4" />
-                                        {t('bundling.checkout.btnCompleteProfile', 'Lengkapi Profil Sekarang')}
-                                    </Link>
-                                </Button>
-                            </div>
-                        </Card>
-                    </motion.div>
-                </section>
-            </UserLayout>
+            </div>
         );
     }
 
+    const promoApplied = (codeType === 'voucher' && !!discountData?.valid) || (codeType === 'referral' && !!referralData?.valid);
+    const savePercent = bundle.strikethrough_price > 0 ? Math.round((bundleDiscount / bundle.strikethrough_price) * 100) : 0;
+    const handleCopyText = (text: string) => {
+        navigator.clipboard.writeText(text).then(() => {
+            toast.success(t('webinar.register.copySuccess', 'Berhasil menyalin ke clipboard!'));
+        });
+    };
+
     return (
-        <UserLayout>
+        <div className="min-h-screen bg-[#FAF8F4]">
             <Head title={t('bundling.checkout.headTitle', { title: bundle.title, defaultValue: `Checkout - ${bundle.title}` })} />
+            <CheckoutHeader backHref={`/bundle/${bundle.slug}`} />
 
-            {/* Hero Section */}
-            <section className="from-primary to-primary-foreground relative overflow-hidden bg-gradient-to-br px-4 py-12">
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="relative mx-auto max-w-7xl">
-                    <div className="mb-6 flex flex-wrap items-center gap-3">
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
-                        >
-                            <Package className="h-3.5 w-3.5" />
+            <main className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 sm:py-10">
+                {/* Header & Breadcrumb */}
+                <div className="mb-6">
+                    <nav aria-label="Breadcrumb" className="flex flex-wrap items-center gap-2 text-xs text-[#5B6B7F] sm:text-sm">
+                        <Link href="/bundle" className="transition-colors hover:text-[#1976D3]">
                             {t('bundling.dashboard.catalog.badge', 'Paket Bundling')}
-                        </motion.div>
+                        </Link>
+                        <span>/</span>
+                        <Link href={`/bundle/${bundle.slug}`} className="max-w-[240px] truncate transition-colors hover:text-[#1976D3] sm:max-w-md">
+                            {bundle.title}
+                        </Link>
+                        <span>/</span>
+                        <span className="font-medium text-[#12344E]">Checkout</span>
+                    </nav>
+                    <h1 className="font-literata mt-3 text-2xl font-bold text-[#12344E] sm:text-3xl">{bundle.title}</h1>
+                    {bundle.description && <p className="mt-1.5 max-w-3xl text-sm leading-relaxed text-[#475569]">{bundle.description}</p>}
+                </div>
 
-                        {bundleDiscount > 0 && (
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.2 }}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-red-700 bg-red-200 px-3 py-1.5 text-sm font-medium text-red-600 backdrop-blur-sm"
-                            >
-                                <Tag className="h-3.5 w-3.5" />
-                                {t('bundling.dashboard.catalog.savePercent', {
-                                    percent: Math.round((bundleDiscount / bundle.strikethrough_price) * 100),
-                                    defaultValue: `Hemat ${Math.round((bundleDiscount / bundle.strikethrough_price) * 100)}%`,
-                                })}
-                            </motion.div>
-                        )}
-
-                        {bundle.batch && (
-                            <motion.div
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: 0.25 }}
-                                className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
-                            >
-                                <Calendar className="h-3.5 w-3.5" />
-                                {bundle.batch}
-                            </motion.div>
-                        )}
-
-                        <motion.div
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-sm font-medium text-white backdrop-blur-sm"
-                        >
-                            <Gift className="h-3.5 w-3.5" />
-                            {t('bundling.dashboard.catalog.programsCount', {
-                                count: bundle.bundle_items_count,
-                                defaultValue: `${bundle.bundle_items_count} Program`,
-                            })}
-                        </motion.div>
-                    </div>
-
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="mb-4 text-3xl font-bold text-black sm:text-4xl lg:text-5xl"
-                    >
-                        {bundle.title}
-                        {bundle.batch && (
-                            <span className="ml-3 inline-flex items-center gap-1.5 rounded-md border border-black/10 bg-black/10 px-2.5 py-0.5 text-sm font-medium text-gray-800 backdrop-blur-sm">
-                                {bundle.batch}
-                            </span>
-                        )}
-                    </motion.h1>
-
-                    {bundle.description && (
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="mb-6 max-w-3xl text-justify text-lg text-black"
-                        >
-                            {bundle.description}
-                        </motion.p>
-                    )}
-
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                        className="flex flex-wrap gap-6"
-                    >
-                        <div className="flex items-center gap-2 text-black">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
-                                <Package className="h-5 w-5" />
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:items-start">
+                    {/* Left Column: Bundle Overview, Items, Benefits & Guest Form */}
+                    <div className={!pendingInvoice ? 'space-y-6 lg:col-span-7' : 'space-y-6 lg:col-span-12'}>
+                        {/* Selected Bundle Card */}
+                        <div className="overflow-hidden rounded-2xl border border-[#DCE3EC] bg-white shadow-sm">
+                            <div className="border-b border-[#DCE3EC] bg-[#FAF8F4] px-5 py-3.5">
+                                <h2 className="text-sm font-semibold uppercase tracking-wide text-[#5B6B7F]">
+                                    {t('webinar.register.programInfoTitle', 'Program Dipilih')}
+                                </h2>
                             </div>
-                            <div>
-                                <p className="text-sm text-black">{t('bundling.detail.register.totalProgramsLabel', 'Total Program')}</p>
-                                <p className="font-semibold">
-                                    {t('bundling.dashboard.catalog.programsCount', {
-                                        count: bundle.bundle_items_count,
-                                        defaultValue: `${bundle.bundle_items_count} Program`,
-                                    })}
-                                </p>
+                            <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+                                <div className="h-24 w-full shrink-0 overflow-hidden rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] sm:w-36">
+                                    <img
+                                        src={resolveStorageUrl(bundle.thumbnail) || '/assets/images/placeholder.png'}
+                                        alt={bundle.title}
+                                        className="h-full w-full object-contain p-1.5"
+                                    />
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <ProgramBadge type="bundle" labelOverride={t('bundling.dashboard.catalog.badge', 'Paket Bundling')} />
+                                        {bundleDiscount > 0 && (
+                                            <span className="rounded-md border border-[#FED7AA] bg-[#FFF3EB] px-2.5 py-0.5 text-xs font-semibold text-[#B8470A]">
+                                                {t('bundling.dashboard.catalog.savePercent', {
+                                                    percent: savePercent,
+                                                    defaultValue: `Hemat ${savePercent}%`,
+                                                })}
+                                            </span>
+                                        )}
+                                        {bundle.batch && (
+                                            <span className="inline-flex items-center gap-1 rounded-md border border-[#DCE3EC] bg-[#FAF8F4] px-2.5 py-0.5 text-xs font-medium text-[#475569]">
+                                                <Calendar className="h-3.5 w-3.5 text-[#1976D3]" />
+                                                {bundle.batch}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <h3 className="font-literata text-lg font-bold leading-snug text-[#12344E]">{bundle.title}</h3>
+                                    <p className="flex items-center gap-1.5 text-xs text-[#475569] sm:text-sm">
+                                        <Package className="h-4 w-4 text-[#1976D3]" />
+                                        {t('bundling.dashboard.catalog.programsCount', {
+                                            count: bundle.bundle_items_count,
+                                            defaultValue: `${bundle.bundle_items_count} Program`,
+                                        })}
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
-                        {bundle.batch && (
-                            <div className="flex items-center gap-2 text-black">
-                                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
-                                    <Calendar className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <p className="text-sm text-black">{t('bundling.detail.register.batchLabel', 'Batch')}</p>
-                                    <p className="font-semibold">{bundle.batch}</p>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-2 text-black">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/10 backdrop-blur-sm">
-                                <Tag className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <p className="text-sm text-black">{t('bundling.detail.register.saveLabel', 'Hemat')}</p>
-                                <p className="font-semibold">{rupiahFormatter.format(bundleDiscount)}</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                </motion.div>
-            </section>
-
-            {/* Main Content */}
-            <section className="mx-auto my-8 w-full max-w-7xl px-4">
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                    {/* Left Column - Bundle Details */}
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="lg:col-span-2">
+                        {/* Programs & Benefits Tabs */}
                         <Tabs defaultValue="programs" className="w-full">
-                            <TabsList className="grid w-full grid-cols-2">
-                                <TabsTrigger value="programs" className="gap-2">
+                            <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-1">
+                                <TabsTrigger value="programs" className="gap-2 rounded-lg text-xs font-semibold data-[state=active]:bg-white sm:text-sm">
                                     <Package className="h-4 w-4" />
                                     <span className="hidden sm:inline">
                                         {t('bundling.checkout.includedPrograms', { count: bundle.bundle_items_count, defaultValue: 'Program Included' })}
@@ -908,18 +808,19 @@ export default function CheckoutBundle({
                                         {t('bundling.dashboard.catalog.programsCount', { count: bundle.bundle_items_count, defaultValue: 'Program' })}
                                     </span>
                                 </TabsTrigger>
-                                <TabsTrigger value="benefits" className="gap-2">
+                                <TabsTrigger value="benefits" className="gap-2 rounded-lg text-xs font-semibold data-[state=active]:bg-white sm:text-sm">
                                     <BadgeCheck className="h-4 w-4" />
-                                    <span className="hidden sm:inline">{t('bundling.checkout.packageBenefits', 'Keuntungan')}</span>
-                                    <span className="sm:hidden">{t('bundling.checkout.packageBenefits', 'Benefit')}</span>
+                                    <span>{t('bundling.checkout.packageBenefits', 'Keuntungan')}</span>
                                 </TabsTrigger>
                             </TabsList>
 
                             <TabsContent value="programs" className="mt-4">
-                                <Card className="p-6">
-                                    <div className="mb-6">
-                                        <h2 className="mb-2 text-2xl font-bold">{t('bundling.checkout.programsInBundleTitle', 'Program dalam Paket')}</h2>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <div className="rounded-2xl border border-[#DCE3EC] bg-white p-5 shadow-sm sm:p-6">
+                                    <div className="mb-4">
+                                        <h2 className="font-literata text-xl font-bold text-[#12344E]">
+                                            {t('bundling.checkout.programsInBundleTitle', 'Program dalam Paket')}
+                                        </h2>
+                                        <p className="mt-1 text-xs text-[#5B6B7F] sm:text-sm">
                                             {t('bundling.checkout.programsInBundleSubtitle', {
                                                 count: bundle.bundle_items_count,
                                                 defaultValue: `${bundle.bundle_items_count} program pembelajaran yang bisa kamu akses`,
@@ -929,44 +830,43 @@ export default function CheckoutBundle({
 
                                     <div className="space-y-3">
                                         {bundle.bundle_items.map((item, idx) => (
-                                            <motion.div
+                                            <div
                                                 key={item.id}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 0.1 * idx }}
-                                                className="group flex items-center gap-4 rounded-lg border bg-gradient-to-br from-blue-50 to-indigo-50 p-4 transition-all hover:shadow-md dark:from-blue-950/20 dark:to-indigo-950/20"
+                                                className="flex items-center gap-3.5 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-3.5"
                                             >
-                                                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg transition-transform group-hover:scale-110">
-                                                    <span className="font-bold">{idx + 1}</span>
+                                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#12344E] text-sm font-bold text-white">
+                                                    {idx + 1}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
-                                                    <p className="font-semibold text-gray-900 dark:text-gray-100">{item.bundleable.title}</p>
-                                                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                    <p className="text-sm font-semibold text-[#12344E] sm:text-base">{item.bundleable.title}</p>
+                                                    <p className="mt-0.5 text-xs text-[#5B6B7F]">
                                                         {item.bundleable_type.includes('Course')
-                                                            ? t('bundling.detail.items.courseBadge', '📚 Kelas Online')
+                                                            ? t('home:latest.badges.course', 'Kelas Online')
                                                             : item.bundleable_type.includes('Bootcamp')
-                                                              ? t('bundling.detail.items.bootcampBadge', '🚀 Bootcamp')
-                                                              : t('bundling.detail.items.webinarBadge', '🎥 Webinar')}
+                                                              ? t('home:latest.badges.bootcamp', 'Bootcamp')
+                                                              : t('home:latest.badges.webinar', 'Webinar')}
                                                     </p>
                                                 </div>
-                                                <div className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                                                <div className="shrink-0 text-sm font-semibold text-[#162230] tabular-nums">
                                                     {item.price === 0 ? (
-                                                        <span className="text-green-600">{t('bundling.dashboard.catalog.free', 'Gratis')}</span>
+                                                        <span className="text-[#15803D]">{t('bundling.dashboard.catalog.free', 'Gratis')}</span>
                                                     ) : (
                                                         rupiahFormatter.format(item.price)
                                                     )}
                                                 </div>
-                                            </motion.div>
+                                            </div>
                                         ))}
                                     </div>
-                                </Card>
+                                </div>
                             </TabsContent>
 
                             <TabsContent value="benefits" className="mt-4">
-                                <Card className="p-6">
-                                    <div className="mb-6">
-                                        <h2 className="mb-2 text-2xl font-bold">{t('bundling.checkout.packageBenefits', 'Keuntungan Paket Bundling')}</h2>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <div className="rounded-2xl border border-[#DCE3EC] bg-white p-5 shadow-sm sm:p-6">
+                                    <div className="mb-4">
+                                        <h2 className="font-literata text-xl font-bold text-[#12344E]">
+                                            {t('bundling.checkout.packageBenefits', 'Keuntungan Paket Bundling')}
+                                        </h2>
+                                        <p className="mt-1 text-xs text-[#5B6B7F] sm:text-sm">
                                             {t('bundling.checkout.packageBenefitsDesc', 'Benefit yang akan kamu dapatkan dengan membeli paket bundling')}
                                         </p>
                                     </div>
@@ -974,8 +874,8 @@ export default function CheckoutBundle({
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         {[
                                             t('bundling.checkout.benefitSave', {
-                                                percent: Math.round((bundleDiscount / bundle.strikethrough_price) * 100),
-                                                defaultValue: `Hemat ${Math.round((bundleDiscount / bundle.strikethrough_price) * 100)}% dari harga normal`,
+                                                percent: savePercent,
+                                                defaultValue: `Hemat ${savePercent}% dari harga normal`,
                                             }),
                                             t('bundling.checkout.benefitAccess', {
                                                 count: bundle.bundle_items_count,
@@ -986,109 +886,133 @@ export default function CheckoutBundle({
                                             t('bundling.checkout.benefitUpdates', 'Update materi gratis selamanya'),
                                             t('bundling.checkout.benefitSupport', 'Prioritas support dari tim instruktur'),
                                         ].map((benefit, idx) => (
-                                            <motion.div
-                                                key={idx}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ delay: 0.1 * idx }}
-                                                className="group flex items-start gap-3 rounded-lg border bg-gradient-to-br from-green-50 to-emerald-50 p-4 transition-all hover:shadow-md dark:from-green-950/20 dark:to-emerald-950/20"
-                                            >
-                                                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-green-500 text-white shadow-lg transition-transform group-hover:scale-110">
-                                                    <Check className="h-4 w-4" />
+                                            <div key={idx} className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-3.5">
+                                                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#15803D] text-white">
+                                                    <Check className="h-3.5 w-3.5" />
                                                 </div>
-                                                <p className="text-sm leading-relaxed font-medium text-gray-700 dark:text-gray-300">{benefit}</p>
-                                            </motion.div>
+                                                <p className="text-sm leading-relaxed text-[#162230]">{benefit}</p>
+                                            </div>
                                         ))}
                                     </div>
-                                </Card>
+                                </div>
                             </TabsContent>
                         </Tabs>
 
+                        {/* Participant Form Card */}
                         {!isLoggedIn && (
-                            <form
-                                className="mt-6 flex flex-col gap-6 rounded-2xl border bg-white/95 p-6 shadow-xl backdrop-blur-sm dark:bg-gray-800/95"
-                                onSubmit={submit}
-                            >
-                                <h1 className="text-xl font-bold">{t('bundling.checkout.personalDataTitle', 'Masukkan Data Diri Anda')}</h1>
-                                <div className="grid gap-2">
-                                    <Label htmlFor="email">{t('bundling.checkout.emailLabel', 'Email')}</Label>
-                                    <div className="flex gap-2">
-                                        <div className="relative flex-1">
-                                            <Input
-                                                id="email"
-                                                type="email"
-                                                required
-                                                tabIndex={1}
-                                                autoComplete="email"
-                                                value={data.email}
-                                                onChange={(e) => setData('email', e.target.value)}
-                                                disabled={processing}
-                                                placeholder="email@example.com"
-                                                className="pr-10"
-                                            />
-                                            {checkingEmail && (
-                                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                                    <LoaderCircle className="h-4 w-4 animate-spin text-gray-400" />
-                                                </div>
-                                            )}
-                                            {!checkingEmail && emailExists && (
-                                                <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                                    <Check className="h-5 w-5 text-green-600" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="icon"
-                                            onClick={async () => {
-                                                if (!data.email || !data.email.includes('@')) {
-                                                    toast.error(t('bundling.checkout.emailValidRequired', 'Masukkan email yang valid'));
-                                                    return;
-                                                }
-
-                                                setCheckingEmail(true);
-                                                try {
-                                                    const response = await axios.post('/api/check-email', {
-                                                        email: data.email,
-                                                    });
-
-                                                    if (response.data.exists) {
-                                                        setEmailExists(true);
-                                                        setData('name', response.data.name || '');
-                                                        setData('phone_number', response.data.phone_number || '');
-                                                        setData('instance', response.data.instance || '');
-                                                        setData('city', response.data.city || '');
-                                                        toast.success(t('bundling.checkout.emailFound', 'Email ditemukan!'));
-                                                    } else {
-                                                        setEmailExists(false);
-                                                        toast.info(t('bundling.checkout.emailNotRegistered', 'Email tidak terdaftar'));
-                                                    }
-                                                } catch (error) {
-                                                    console.error('Error checking email:', error);
-                                                    setEmailExists(false);
-                                                    toast.error(t('bundling.checkout.checkEmailFailed', 'Gagal mengecek email'));
-                                                } finally {
-                                                    setCheckingEmail(false);
-                                                }
-                                            }}
-                                            disabled={checkingEmail || !data.email}
-                                            className="flex-shrink-0"
-                                        >
-                                            <RefreshCw className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                    {emailExists && (
-                                        <p className="text-xs text-green-600">
-                                            {t('bundling.checkout.emailFound', 'Email ditemukan, data terisi otomatis')}
+                            <form className="overflow-hidden rounded-2xl border border-[#DCE3EC] bg-white shadow-sm" onSubmit={submit}>
+                                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#DCE3EC] bg-[#FAF8F4] px-5 py-4">
+                                    <div>
+                                        <h2 className="font-literata text-lg font-bold text-[#12344E]">
+                                            {t('webinar.register.participantDataTitle', 'Data Peserta')}
+                                        </h2>
+                                        <p className="text-xs text-[#475569]">
+                                            {t('webinar.register.participantDataDesc', 'Digunakan untuk pembuatan sertifikat & akses grup kelas.')}
                                         </p>
-                                    )}
-                                    <InputError message={errors.email} />
+                                    </div>
+                                    <span className="text-xs text-[#5B6B7F]">
+                                        <span className="font-semibold text-[#B91C1C]">*</span>{' '}
+                                        {t('webinar.register.requiredLegend', 'Wajib diisi')}
+                                    </span>
                                 </div>
 
-                                <div className="grid gap-6">
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="name">{t('bundling.checkout.nameLabel', 'Nama')}</Label>
+                                <div className="grid gap-5 p-5 sm:grid-cols-2 sm:p-6">
+                                    <div className="space-y-1.5 sm:col-span-2">
+                                        <Label htmlFor="email" className="text-sm font-semibold text-[#162230]">
+                                            {t('bundling.checkout.emailLabel', 'Email')} <span className="text-[#B91C1C]">*</span>
+                                        </Label>
+                                        <div className="flex gap-2">
+                                            <div className="relative flex-1">
+                                                <Input
+                                                    id="email"
+                                                    type="email"
+                                                    required
+                                                    tabIndex={1}
+                                                    autoComplete="email"
+                                                    value={data.email}
+                                                    onChange={(e) => setData('email', e.target.value)}
+                                                    disabled={processing}
+                                                    placeholder="email@example.com"
+                                                    className="pr-10"
+                                                />
+                                                {checkingEmail && (
+                                                    <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                        <LoaderCircle className="h-4 w-4 animate-spin text-[#5B6B7F]" />
+                                                    </div>
+                                                )}
+                                                {!checkingEmail && emailExists && (
+                                                    <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                        <Check className="h-5 w-5 text-[#15803D]" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button
+                                                            type="button"
+                                                            variant="outline"
+                                                            onClick={async () => {
+                                                                if (!data.email || !data.email.includes('@')) {
+                                                                    toast.error(t('bundling.checkout.emailValidRequired', 'Masukkan email yang valid'));
+                                                                    return;
+                                                                }
+
+                                                                setCheckingEmail(true);
+                                                                try {
+                                                                    const response = await axios.post('/api/check-email', {
+                                                                        email: data.email,
+                                                                    });
+
+                                                                    if (response.data.exists) {
+                                                                        setEmailExists(true);
+                                                                        setData('name', response.data.name || '');
+                                                                        setData('phone_number', response.data.phone_number || '');
+                                                                        setData('instance', response.data.instance || '');
+                                                                        setData('city', response.data.city || '');
+                                                                        toast.success(t('bundling.checkout.emailFound', 'Email ditemukan!'));
+                                                                    } else {
+                                                                        setEmailExists(false);
+                                                                        toast.info(t('bundling.checkout.emailNotRegistered', 'Email tidak terdaftar'));
+                                                                    }
+                                                                } catch (error) {
+                                                                    console.error('Error checking email:', error);
+                                                                    setEmailExists(false);
+                                                                    toast.error(t('bundling.checkout.checkEmailFailed', 'Gagal mengecek email'));
+                                                                } finally {
+                                                                    setCheckingEmail(false);
+                                                                }
+                                                            }}
+                                                            disabled={checkingEmail || !data.email}
+                                                            className="h-11 shrink-0 gap-1.5 px-3"
+                                                        >
+                                                            <RefreshCw className="h-4 w-4" />
+                                                            <span className="hidden sm:inline">
+                                                                {t('webinar.register.btnCheckEmail', 'Cek Email')}
+                                                            </span>
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {t(
+                                                            'webinar.register.checkEmailTooltip',
+                                                            'Periksa apakah email sudah terdaftar untuk mengisi data otomatis',
+                                                        )}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        </div>
+                                        {emailExists && (
+                                            <p className="text-xs font-medium text-[#15803D]">
+                                                {t('bundling.checkout.emailFound', 'Email ditemukan, data terisi otomatis')}
+                                            </p>
+                                        )}
+                                        <InputError message={errors.email} />
+                                    </div>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="name" className="text-sm font-semibold text-[#162230]">
+                                            {t('bundling.checkout.nameLabel', 'Nama Lengkap')} <span className="text-[#B91C1C]">*</span>
+                                        </Label>
                                         <Input
                                             id="name"
                                             type="text"
@@ -1100,11 +1024,13 @@ export default function CheckoutBundle({
                                             disabled={processing || emailExists}
                                             placeholder={t('bundling.checkout.namePlaceholder', 'Nama lengkap Anda')}
                                         />
-                                        <InputError message={errors.name} className="mt-2" />
+                                        <InputError message={errors.name} />
                                     </div>
 
-                                    <div className="grid gap-2">
-                                        <Label htmlFor="phone_number">{t('bundling.checkout.phoneLabel', 'No. Telepon')}</Label>
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="phone_number" className="text-sm font-semibold text-[#162230]">
+                                            {t('bundling.checkout.phoneLabel', 'No. Telepon / WhatsApp')} <span className="text-[#B91C1C]">*</span>
+                                        </Label>
                                         <Input
                                             id="phone_number"
                                             type="tel"
@@ -1117,19 +1043,22 @@ export default function CheckoutBundle({
                                             placeholder={t('bundling.checkout.phonePlaceholder', '08xxxxxxxxxx')}
                                         />
                                         {!emailExists && (
-                                            <p className="text-xs text-gray-500">
-                                                {t('bundling.checkout.phoneNotice', 'Nomor telepon akan digunakan sebagai password anda')}
+                                            <p className="text-xs leading-relaxed text-[#475569]">
+                                                {t('bundling.checkout.phoneNotice', 'Nomor telepon akan digunakan sebagai password akun Anda')}
                                             </p>
                                         )}
                                         {emailExists && (
-                                            <p className="text-xs text-blue-600">
+                                            <p className="text-xs font-medium text-[#1976D3]">
                                                 {t('bundling.checkout.phoneMatchNotice', 'Pastikan nomor telepon sesuai dengan yang terdaftar')}
                                             </p>
                                         )}
                                         <InputError message={errors.phone_number} />
                                     </div>
-                                    <div className="grid gap-2 pb-2">
-                                        <Label htmlFor="instance">{t('bundling.checkout.instanceLabel', 'Instansi/Perusahaan')}</Label>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="instance" className="text-sm font-semibold text-[#162230]">
+                                            {t('bundling.checkout.instanceLabel', 'Instansi / Perusahaan')} <span className="text-[#B91C1C]">*</span>
+                                        </Label>
                                         <Input
                                             id="instance"
                                             type="text"
@@ -1143,8 +1072,11 @@ export default function CheckoutBundle({
                                         />
                                         <InputError message={errors.instance} />
                                     </div>
-                                    <div className="grid gap-2 pb-2">
-                                        <Label htmlFor="city">{t('bundling.checkout.cityLabel', 'Kota Domisili')}</Label>
+
+                                    <div className="space-y-1.5">
+                                        <Label htmlFor="city" className="text-sm font-semibold text-[#162230]">
+                                            {t('bundling.checkout.cityLabel', 'Kota Domisili')} <span className="text-[#B91C1C]">*</span>
+                                        </Label>
                                         <Input
                                             id="city"
                                             type="text"
@@ -1160,297 +1092,442 @@ export default function CheckoutBundle({
                                 </div>
                             </form>
                         )}
+                    </div>
 
-                        {/* Payment Channels Section - only show when no pending invoice and no access */}
-                        {/* {channels.length > 0 && !pendingInvoice && !hasAccess && (
-                            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="mt-6">
-                                <Card className="p-6">
-                                    <div className="mb-6">
-                                        <h2 className="mb-2 text-2xl font-bold">Metode Pembayaran</h2>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Pilih metode pembayaran yang Anda inginkan</p>
-                                    </div>
+                    {/* Right Column: Sticky Payment Summary */}
+                    <div className={!pendingInvoice ? 'lg:sticky lg:top-24 lg:col-span-5' : 'lg:col-span-12'}>
+                        {hasAccess && (!activeInstallment || activeInstallment.is_fully_paid) ? (
+                            <div className="flex flex-col items-center justify-center space-y-4 rounded-2xl border border-[#BBF7D0] bg-white p-6 text-center shadow-sm">
+                                <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#DCFCE7]">
+                                    <BadgeCheck className="h-7 w-7 text-[#15803D]" />
+                                </div>
+                                <div>
+                                    <h2 className="font-literata mb-1.5 text-xl font-bold text-[#12344E]">
+                                        {t('bundling.checkout.alreadyHaveAccessTitle', 'Sudah Terdaftar')}
+                                    </h2>
+                                    <p className="text-sm text-[#475569]">
+                                        {t(
+                                            'bundling.checkout.alreadyHaveAccessDesc',
+                                            'Anda sudah memiliki akses ke paket bundling ini. Lanjutkan belajar untuk menyelesaikan materi.',
+                                        )}
+                                    </p>
+                                </div>
+                                <Button asChild size="lg" className="h-11 w-full bg-[#15803D] text-white hover:bg-[#166534]">
+                                    <Link href={route('profile.index')}>
+                                        <Play className="mr-2 h-4 w-4" />
+                                        {t('bundling.checkout.btnGoToProfile', 'Lihat Dashboard')}
+                                    </Link>
+                                </Button>
+                            </div>
+                        ) : pendingInvoice ? (
+                            <PaymentStatusCard
+                                pendingInvoice={pendingInvoice}
+                                expiryInfo={formatExpiryTime(pendingInvoice.expires_at)}
+                                cancellingInvoice={cancellingInvoice}
+                                onCopy={handleCopyText}
+                                onCancel={async () => {
+                                    if (
+                                        confirm(
+                                            t(
+                                                'bundling.checkout.confirmCancel',
+                                                'Apakah Anda yakin ingin membatalkan transaksi ini dan membuat pesanan baru?',
+                                            ),
+                                        )
+                                    ) {
+                                        setCancellingInvoice(true);
+                                        try {
+                                            await axios.post(route('invoice.cancel', pendingInvoice.id));
+                                            toast.success(t('bundling.checkout.cancelSuccess', 'Pesanan berhasil dibatalkan.'));
+                                            window.location.reload();
+                                        } catch (err: any) {
+                                            toast.error(err.response?.data?.message || t('bundling.checkout.cancelFailed', 'Gagal membatalkan pesanan.'));
+                                            setCancellingInvoice(false);
+                                        }
+                                    }
+                                }}
+                            />
+                        ) : (
+                            <div className="overflow-hidden rounded-2xl border border-[#DCE3EC] bg-white shadow-sm">
+                                <div className="border-b border-[#DCE3EC] bg-[#FAF8F4] px-5 py-4">
+                                    <h2 className="font-literata text-lg font-bold text-[#12344E]">
+                                        {t('bundling.checkout.paymentDetailTitle', 'Ringkasan Pembayaran')}
+                                    </h2>
+                                </div>
 
-                                    <div className="grid gap-3">
-                                        {channels.map((channel) => (
-                                            <div
-                                                key={channel.code}
-                                                onClick={() => setSelectedChannel(channel)}
-                                                className={`group cursor-pointer rounded-xl border-2 p-4 transition-all ${
-                                                    selectedChannel?.code === channel.code
-                                                        ? 'border-orange-500 bg-orange-50/50 dark:bg-orange-950/20'
-                                                        : 'border-gray-200 hover:border-orange-300 dark:border-gray-700 dark:hover:border-orange-600'
-                                                }`}
-                                            >
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex flex-1 items-center gap-4">
-                                                        <div className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-700">
-                                                            <img
-                                                                src={channel.icon_url}
-                                                                alt={channel.name}
-                                                                className="h-full w-full object-contain p-1"
+                                <form onSubmit={handleCheckout} className="space-y-5 p-5 sm:p-6">
+                                    {(installmentTerms && installmentTerms.length > 0) || (activeInstallment && !activeInstallment.is_fully_paid) ? (
+                                        <Tabs
+                                            value={paymentTab}
+                                            onValueChange={(val) => {
+                                                if (val === 'full' && activeInstallment && !activeInstallment.is_fully_paid) {
+                                                    toast.error(
+                                                        t(
+                                                            'bundling.checkout.errors.fullPaymentDisabled',
+                                                            'Anda memiliki cicilan aktif. Pembayaran penuh dinonaktifkan.',
+                                                        ),
+                                                    );
+                                                    return;
+                                                }
+                                                if (val === 'installment' && isAnyTermOverdue && !activeInstallment) {
+                                                    toast.error(
+                                                        t(
+                                                            'bundling.checkout.errors.installmentOverdue',
+                                                            'Batas waktu pembayaran cicilan telah terlewat.',
+                                                        ),
+                                                    );
+                                                    return;
+                                                }
+                                                setPaymentTab(val as 'full' | 'installment');
+                                            }}
+                                            className="w-full space-y-4"
+                                        >
+                                            <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-1">
+                                                <TabsTrigger
+                                                    value="full"
+                                                    disabled={!!activeInstallment && !activeInstallment.is_fully_paid}
+                                                    className="rounded-lg text-xs font-semibold data-[state=active]:bg-white sm:text-sm"
+                                                >
+                                                    {t('bundling.checkout.tabFullPayment', 'Bayar Penuh')}
+                                                </TabsTrigger>
+                                                <TabsTrigger
+                                                    value="installment"
+                                                    disabled={isAnyTermOverdue && !activeInstallment}
+                                                    className="rounded-lg text-xs font-semibold data-[state=active]:bg-white sm:text-sm"
+                                                >
+                                                    {t('bundling.checkout.tabInstallment', 'Cicilan')} (
+                                                    {activeInstallment && !activeInstallment.is_fully_paid
+                                                        ? activeInstallment.total_terms || activeInstallment.terms?.length
+                                                        : installmentTerms.length}
+                                                    x)
+                                                </TabsTrigger>
+                                            </TabsList>
+
+                                            <TabsContent value="full" className="m-0 space-y-5">
+                                                {/* Collapsible Voucher / Referral */}
+                                                <Collapsible open={promoOpen || promoApplied} onOpenChange={setPromoOpen}>
+                                                    <CollapsibleTrigger asChild>
+                                                        <button
+                                                            type="button"
+                                                            className="flex min-h-11 w-full items-center justify-between rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] px-4 py-2.5 text-left text-sm font-semibold text-[#12344E] transition-colors hover:border-[#93C5FD]"
+                                                        >
+                                                            <span className="flex items-center gap-2">
+                                                                <Tag className="h-4 w-4 text-[#1976D3]" />
+                                                                <span>{t('webinar.register.havePromoCode', 'Punya kode voucher atau referral?')}</span>
+                                                                {promoApplied && (
+                                                                    <span className="rounded-full bg-[#DCFCE7] px-2 py-0.5 text-[11px] font-semibold text-[#15803D]">
+                                                                        {t('webinar.register.codeAppliedTag', 'Aktif')}
+                                                                    </span>
+                                                                )}
+                                                            </span>
+                                                            <ChevronDown
+                                                                className={`h-4 w-4 text-[#5B6B7F] transition-transform ${
+                                                                    promoOpen || promoApplied ? 'rotate-180' : ''
+                                                                }`}
                                                             />
+                                                        </button>
+                                                    </CollapsibleTrigger>
+                                                    <CollapsibleContent className="pt-3">
+                                                        <div className="space-y-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                                            <div className="space-y-1.5">
+                                                                <Label className="text-xs font-semibold uppercase tracking-wide text-[#5B6B7F]">
+                                                                    {t('bundling.checkout.codeType', 'Jenis Kode')}
+                                                                </Label>
+                                                                <RadioGroup
+                                                                    value={codeType}
+                                                                    onValueChange={(val: 'voucher' | 'referral') => {
+                                                                        setCodeType(val);
+                                                                        setPromoCode('');
+                                                                        setDiscountData(null);
+                                                                        setReferralData(null);
+                                                                        setPromoError('');
+                                                                        setReferralError('');
+                                                                    }}
+                                                                    className="flex gap-5 pt-1"
+                                                                >
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="voucher" id="bund-code-voucher" />
+                                                                        <Label htmlFor="bund-code-voucher" className="cursor-pointer text-sm text-[#162230]">
+                                                                            {t('bundling.checkout.voucher', 'Voucher')}
+                                                                        </Label>
+                                                                    </div>
+                                                                    <div className="flex items-center space-x-2">
+                                                                        <RadioGroupItem value="referral" id="bund-code-referral" />
+                                                                        <Label htmlFor="bund-code-referral" className="cursor-pointer text-sm text-[#162230]">
+                                                                            {t('bundling.checkout.referral', 'Referral')}
+                                                                        </Label>
+                                                                    </div>
+                                                                </RadioGroup>
+                                                            </div>
+
+                                                            <div className="space-y-1.5">
+                                                                <Label htmlFor="promo-code" className="text-xs font-semibold text-[#162230]">
+                                                                    {codeType === 'voucher'
+                                                                        ? t('bundling.checkout.voucherCode', 'Kode Voucher / Promo')
+                                                                        : t('bundling.checkout.referralCode', 'Kode Referral')}
+                                                                </Label>
+                                                                <div className="flex gap-2">
+                                                                    <div className="relative flex-1">
+                                                                        <Input
+                                                                            id="promo-code"
+                                                                            type="text"
+                                                                            placeholder={
+                                                                                codeType === 'voucher'
+                                                                                    ? t('bundling.checkout.enterVoucherCode', 'Masukkan kode promo')
+                                                                                    : t('bundling.checkout.enterReferralCode', 'Masukkan kode referral')
+                                                                            }
+                                                                            value={promoCode}
+                                                                            onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                                                                            className="pr-10"
+                                                                        />
+                                                                        {(promoLoading || referralLoading) && (
+                                                                            <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                                                <LoaderCircle className="h-4 w-4 animate-spin text-[#1976D3]" />
+                                                                            </div>
+                                                                        )}
+                                                                        {!(promoLoading || referralLoading) && promoCode && (
+                                                                            <div className="absolute top-1/2 right-3 -translate-y-1/2">
+                                                                                {codeType === 'voucher' ? (
+                                                                                    discountData?.valid ? (
+                                                                                        <Check className="h-5 w-5 text-[#15803D]" />
+                                                                                    ) : promoError ? (
+                                                                                        <X className="h-5 w-5 text-[#B91C1C]" />
+                                                                                    ) : null
+                                                                                ) : referralData?.valid ? (
+                                                                                    <Check className="h-5 w-5 text-[#15803D]" />
+                                                                                ) : referralError ? (
+                                                                                    <X className="h-5 w-5 text-[#B91C1C]" />
+                                                                                ) : null}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                    <Button
+                                                                        type="button"
+                                                                        variant="outline"
+                                                                        onClick={async () => {
+                                                                            if (!promoCode.trim()) {
+                                                                                toast.error(
+                                                                                    t('bundling.checkout.errors.enterCodeRequired', {
+                                                                                        type: codeType === 'voucher' ? 'promo' : 'referral',
+                                                                                        defaultValue: `Masukkan kode ${codeType === 'voucher' ? 'promo' : 'referral'} terlebih dahulu`,
+                                                                                    }),
+                                                                                );
+                                                                                return;
+                                                                            }
+                                                                            if (codeType === 'voucher') await validatePromoCode();
+                                                                            else await validateReferralCode();
+                                                                        }}
+                                                                        disabled={promoLoading || referralLoading || !promoCode.trim()}
+                                                                        className="h-11 shrink-0 gap-1.5 px-3"
+                                                                    >
+                                                                        <RefreshCw className="h-4 w-4" />
+                                                                        <span className="text-xs font-semibold">
+                                                                            {t('webinar.register.btnVerifyCode', 'Cek')}
+                                                                        </span>
+                                                                    </Button>
+                                                                </div>
+
+                                                                {codeType === 'voucher' && promoError && (
+                                                                    <p className="text-xs font-medium text-[#B91C1C]">{promoError}</p>
+                                                                )}
+                                                                {codeType === 'voucher' && discountData?.valid && (
+                                                                    <div className="rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] p-3">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Check className="h-4 w-4 text-[#15803D]" />
+                                                                            <p className="text-xs font-semibold text-[#15803D]">
+                                                                                {t('bundling.checkout.voucherSuccess', {
+                                                                                    code: discountData.discount_code.code,
+                                                                                    defaultValue: `Promo "${discountData.discount_code.code}" diterapkan!`,
+                                                                                })}
+                                                                            </p>
+                                                                        </div>
+                                                                        <p className="mt-1 text-xs text-[#166534]">
+                                                                            {discountData.discount_code.name} —{' '}
+                                                                            {t('bundling.detail.register.saveLabel', 'Hemat')}{' '}
+                                                                            {discountData.discount_code.formatted_value}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+
+                                                                {codeType === 'referral' && referralError && (
+                                                                    <p className="text-xs font-medium text-[#B91C1C]">{referralError}</p>
+                                                                )}
+                                                                {codeType === 'referral' && referralData?.valid && (
+                                                                    <div className="rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] p-3">
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Check className="h-4 w-4 text-[#15803D]" />
+                                                                            <p className="text-xs font-semibold text-[#15803D]">
+                                                                                {t('bundling.checkout.referralSuccess', 'Kode Referral Valid!')}
+                                                                            </p>
+                                                                        </div>
+                                                                        <p className="mt-1 text-xs text-[#166534]">
+                                                                            {t('bundling.checkout.referralReferredBy', {
+                                                                                name: referralData.referrer?.name,
+                                                                                defaultValue: `Pembelian Anda dirujuk oleh ${referralData.referrer?.name}. Reward poin akan masuk setelah pembayaran sukses.`,
+                                                                            })}
+                                                                        </p>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="flex-1">
-                                                            <p className="font-semibold text-gray-900 dark:text-white">{channel.name}</p>
-                                                            <p className="text-xs text-gray-600 dark:text-gray-400">{channel.group}</p>
-                                                        </div>
+                                                    </CollapsibleContent>
+                                                </Collapsible>
+
+                                                {/* Price Breakdown */}
+                                                <div className="space-y-2.5 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-4">
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="text-[#475569]">{t('bundling.checkout.bundlePrice', 'Harga Paket')}</span>
+                                                        <span className="font-semibold text-[#162230] tabular-nums">
+                                                            {rupiahFormatter.format(bundle.price)}
+                                                        </span>
                                                     </div>
-                                                    <div
-                                                        className="flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all"
-                                                        style={{
-                                                            borderColor: selectedChannel?.code === channel.code ? '#ea580c' : '#d1d5db',
-                                                            backgroundColor: selectedChannel?.code === channel.code ? '#ea580c' : 'transparent',
-                                                        }}
-                                                    >
-                                                        {selectedChannel?.code === channel.code && <Check className="h-3 w-3 text-white" />}
+
+                                                    {discountData?.valid && (
+                                                        <div className="flex items-center justify-between text-sm">
+                                                            <span className="flex items-center gap-1 text-[#475569]">
+                                                                <Gift className="h-3.5 w-3.5 text-[#15803D]" />
+                                                                {t('bundling.checkout.promoDiscount', {
+                                                                    code: discountData.discount_code.code,
+                                                                    defaultValue: `Promo (${discountData.discount_code.code})`,
+                                                                })}
+                                                            </span>
+                                                            <span className="font-semibold text-[#15803D] tabular-nums">
+                                                                -{rupiahFormatter.format(discountData.discount_amount)}
+                                                            </span>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="text-[#475569]">
+                                                            {t('bundling.checkout.transactionFee', 'Biaya Transaksi')}
+                                                        </span>
+                                                        <span className="font-medium text-[#162230] tabular-nums">
+                                                            {rupiahFormatter.format(adminFee)}
+                                                        </span>
+                                                    </div>
+
+                                                    <Separator className="bg-[#DCE3EC]" />
+
+                                                    <div className="flex items-center justify-between pt-1">
+                                                        <span className="font-semibold text-[#12344E]">
+                                                            {t('bundling.checkout.totalPayment', 'Total Pembayaran')}
+                                                        </span>
+                                                        <span className="font-literata text-2xl font-bold text-[#12344E] tabular-nums">
+                                                            {rupiahFormatter.format(totalPrice)}
+                                                        </span>
                                                     </div>
                                                 </div>
-                                                {selectedChannel?.code === channel.code && (
-                                                    <div className="mt-4 border-t border-orange-200 pt-4 dark:border-orange-900">
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-sm font-semibold text-gray-600 dark:text-gray-400">
-                                                                Biaya Admin
-                                                            </span>
-                                                            <span className="font-semibold text-orange-600">
-                                                                {rupiahFormatter.format(calculateAdminFee(channel))}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </Card>
-                            </motion.div>
-                        )} */}
-                    </motion.div>
 
-                    {/* Right Column - Checkout/Status Card */}
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="lg:col-span-1">
-                        <div className="sticky top-4">
-                            {hasAccess && (!activeInstallment || activeInstallment.is_fully_paid) ? (
-                                <Card className="overflow-hidden border-2 border-green-500/20">
-                                    <div className="bg-gradient-to-br from-green-50 to-emerald-50 p-8 text-center dark:from-green-950/20 dark:to-emerald-950/20">
-                                        <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-lg">
-                                            <BadgeCheck className="h-10 w-10 text-white" />
-                                        </div>
+                                                {/* Terms Checkbox */}
+                                                <div className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-3.5">
+                                                    <Checkbox
+                                                        id="terms"
+                                                        checked={termsAccepted}
+                                                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                                                        className="mt-0.5"
+                                                    />
+                                                    <Label htmlFor="terms" className="cursor-pointer text-xs leading-relaxed text-[#475569] sm:text-sm">
+                                                        {t('bundling.checkout.agreeTerms', 'Saya menyetujui')}{' '}
+                                                        <a
+                                                            href="/terms-and-conditions"
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="font-semibold text-[#1976D3] hover:underline"
+                                                        >
+                                                            {t('bundling.checkout.termsAndConditions', 'syarat dan ketentuan')}
+                                                        </a>{' '}
+                                                        {t('bundling.checkout.termsApplicable', 'yang berlaku')}
+                                                    </Label>
+                                                </div>
 
-                                        <h2 className="mb-3 text-2xl font-bold text-green-900 dark:text-green-100">
-                                            {t('bundling.checkout.alreadyHaveAccessTitle', 'Sudah Terdaftar')}
-                                        </h2>
-                                        <p className="mb-6 text-sm text-green-700 dark:text-green-300">
-                                            {t(
-                                                'bundling.checkout.alreadyHaveAccessDesc',
-                                                'Anda sudah memiliki akses ke paket bundling ini. Lanjutkan belajar untuk menyelesaikan materi.'
-                                            )}
-                                        </p>
-
-                                        <Button
-                                            asChild
-                                            size="lg"
-                                            className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
-                                        >
-                                            <Link href={route('profile.index')}>
-                                                <Play className="mr-2 h-4 w-4" />
-                                                {t('bundling.checkout.btnGoToProfile', 'Lihat Dashboard')}
-                                            </Link>
-                                        </Button>
-                                    </div>
-                                </Card>
-                            ) : pendingInvoice ? (
-                                <Card className="overflow-hidden border-2">
-                                    <div
-                                        className="border-b p-4"
-                                        style={{
-                                            backgroundColor: (() => {
-                                                const expiryInfo = formatExpiryTime(pendingInvoice.expires_at);
-                                                const isExpired = expiryInfo.status === 'expired' && pendingInvoice.status === 'pending';
-                                                return isExpired ? '#fee2e2' : 'rgba(254, 249, 195, 0.5)';
-                                            })(),
-                                        }}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            {(() => {
-                                                const expiryInfo = formatExpiryTime(pendingInvoice.expires_at);
-                                                const isExpired = expiryInfo.status === 'expired' && pendingInvoice.status === 'pending';
-                                                if (isExpired) {
-                                                    return (
-                                                        <>
-                                                            <X className="h-5 w-5 text-red-600" />
-                                                            <h2 className="text-lg font-semibold text-red-700">
-                                                                {t('bundling.checkout.paymentExpiredTitle', 'Pembayaran Kedaluwarsa')}
-                                                            </h2>
-                                                        </>
-                                                    );
-                                                }
-                                                return (
-                                                    <>
-                                                        <Hourglass className="h-5 w-5 text-yellow-600" />
-                                                        <h2 className="text-lg font-semibold text-yellow-900">
-                                                            {t('bundling.checkout.pendingInvoiceTitle', 'Transaksi Menunggu Pembayaran')}
-                                                        </h2>
-                                                    </>
-                                                );
-                                            })()}
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-6 p-6">
-                                        {/* Invoice Info */}
-                                        <div className="space-y-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {t('bundling.checkout.invoiceNoLabel', 'No. Invoice')}
-                                                </span>
-                                                <span className="font-semibold text-gray-900 dark:text-white">{pendingInvoice.invoice_code}</span>
-                                            </div>
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                                    {t('bundling.checkout.totalPayment', 'Total Pembayaran')}
-                                                </span>
-                                                <span className="text-xl font-bold text-orange-600">
-                                                    {rupiahFormatter.format(pendingInvoice.amount)}
-                                                </span>
-                                            </div>
-                                        </div>
-
-                                        {(() => {
-                                            const expiryInfo = formatExpiryTime(pendingInvoice.expires_at);
-                                            const isExpired = expiryInfo.status === 'expired' && pendingInvoice.status === 'pending';
-
-                                            if (isExpired) {
-                                                return (
-                                                    <div className="rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
-                                                        <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                                                            {t(
-                                                                'bundling.checkout.expiredNotice',
-                                                                'Waktu pembayaran telah habis. Silakan batalkan transaksi untuk membuat pesanan baru atau hubungi'
-                                                            )}
-                                                            &nbsp;
-                                                            <a
-                                                                href="https://wa.me/6289528514480"
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="font-bold text-orange-600 underline"
-                                                            >
-                                                                WhatsApp Admin
-                                                            </a>
-                                                            .
-                                                        </p>
-                                                    </div>
-                                                );
-                                            }
-
-                                            return null;
-                                        })()}
-
-                                        <div className="space-y-2 pt-2">
-                                            {pendingInvoice.invoice_url && formatExpiryTime(pendingInvoice.expires_at).status !== 'expired' && (
-                                                <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-semibold" size="lg">
-                                                    <a href={pendingInvoice.invoice_url}>
-                                                        {t('bundling.checkout.btnContinuePayment', 'Lanjutkan Pembayaran')}
-                                                    </a>
-                                                </Button>
-                                            )}
-
-                                            <div className="flex gap-2">
-                                                <Button onClick={() => window.location.reload()} variant="outline" className="flex-1" size="lg">
-                                                    {t('bundling.checkout.btnCheckStatus', 'Cek Status')}
-                                                </Button>
-
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    className="flex-1 text-red-600 border-red-200 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950"
-                                                    size="lg"
-                                                    disabled={cancellingInvoice}
-                                                    onClick={async () => {
-                                                        if (
-                                                            confirm(
-                                                                t(
-                                                                    'bundling.checkout.confirmCancel',
-                                                                    'Apakah Anda yakin ingin membatalkan transaksi ini dan membuat pesanan baru?'
-                                                                )
-                                                            )
-                                                        ) {
-                                                            setCancellingInvoice(true);
-                                                            try {
-                                                                await axios.post(route('invoice.cancel', pendingInvoice.id));
-                                                                toast.success(t('bundling.checkout.cancelSuccess', 'Pesanan berhasil dibatalkan.'));
-                                                                window.location.reload();
-                                                            } catch (err: any) {
-                                                                toast.error(
-                                                                    err.response?.data?.message ||
-                                                                        t('bundling.checkout.cancelFailed', 'Gagal membatalkan pesanan.')
-                                                                );
-                                                                setCancellingInvoice(false);
-                                                            }
-                                                        }
-                                                    }}
-                                                >
-                                                    {cancellingInvoice
-                                                        ? t('bundling.checkout.cancelling', 'Membatalkan...')
-                                                        : t('bundling.checkout.btnCancelOrder', 'Batalkan Pesanan')}
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Card>
-                            ) : (
-                                <Card className="overflow-hidden border-2">
-                                    <div className="bg-primary border-b p-4">
-                                        <h2 className="text-center text-lg font-bold text-white">
-                                            {t('bundling.checkout.paymentDetailTitle', 'Detail Pembayaran')}
-                                        </h2>
-                                    </div>
-
-                                    <form onSubmit={handleCheckout} className="px-4 pt-4 pb-6">
-                                        {((installmentTerms && installmentTerms.length > 0) || (activeInstallment && !activeInstallment.is_fully_paid)) ? (
-                                            <Tabs
-                                                value={paymentTab}
-                                                onValueChange={(val) => {
-                                                    if (val === 'full' && activeInstallment && !activeInstallment.is_fully_paid) {
-                                                        toast.error(
-                                                            t(
-                                                                'bundling.checkout.errors.fullPaymentDisabled',
-                                                                'Anda memiliki cicilan aktif. Pembayaran penuh dinonaktifkan.'
-                                                            )
-                                                        );
-                                                        return;
-                                                    }
-                                                    if (val === 'installment' && isAnyTermOverdue && !activeInstallment) {
-                                                        toast.error(
-                                                            t(
-                                                                'bundling.checkout.errors.installmentOverdue',
-                                                                'Batas waktu pembayaran cicilan telah terlewat.'
-                                                            )
-                                                        );
-                                                        return;
-                                                    }
-                                                    setPaymentTab(val as 'full' | 'installment');
-                                                }}
-                                                className="w-full space-y-4"
-                                            >
-                                                <TabsList className="grid w-full grid-cols-2 h-10">
-                                                    <TabsTrigger
-                                                        value="full"
-                                                        disabled={!!activeInstallment && !activeInstallment.is_fully_paid}
-                                                        className="text-xs sm:text-sm"
+                                                <div className="space-y-2">
+                                                    <Button
+                                                        type="submit"
+                                                        size="lg"
+                                                        disabled={!termsAccepted || loading}
+                                                        className="h-12 w-full text-base font-semibold"
                                                     >
-                                                        {t('bundling.checkout.tabFullPayment', 'Bayar Penuh')}
-                                                    </TabsTrigger>
-                                                    <TabsTrigger value="installment" disabled={isAnyTermOverdue && !activeInstallment} className="text-xs sm:text-sm">
-                                                        {t('bundling.checkout.tabInstallment', 'Cicilan')} ({activeInstallment && !activeInstallment.is_fully_paid ? (activeInstallment.total_terms || activeInstallment.terms?.length) : installmentTerms.length}x)
-                                                    </TabsTrigger>
-                                                </TabsList>
+                                                        {loading ? (
+                                                            <>
+                                                                <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                                                                {t('bundling.checkout.processing', 'Memproses...')}
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <CreditCard className="mr-2 h-5 w-5" />
+                                                                {t('bundling.checkout.btnPayNow', 'Lanjutkan Pembayaran')}
+                                                            </>
+                                                        )}
+                                                    </Button>
 
-                                                {/* Tab Bayar Penuh */}
-                                                <TabsContent value="full" className="space-y-4 m-0">
-                                                    <div className="space-y-4">
-                                                        {/* Jenis Kode */}
-                                                        <div className="space-y-2">
-                                                            <Label className="text-sm font-medium flex items-center gap-2">
-                                                                <Tag className="h-4 w-4" />
+                                                    {!termsAccepted && !loading && (
+                                                        <p className="text-center text-xs text-[#5B6B7F]">
+                                                            {t(
+                                                                'webinar.register.disabledTermsHint',
+                                                                'Centang persetujuan syarat dan ketentuan di atas untuk mengaktifkan tombol bayar.',
+                                                            )}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex items-center justify-center gap-1.5 text-xs text-[#5B6B7F]">
+                                                    <Shield className="h-3.5 w-3.5 text-[#15803D]" />
+                                                    <span>{t('bundling.checkout.securityDesc', 'Transaksi Anda dilindungi dengan enkripsi SSL')}</span>
+                                                </div>
+                                            </TabsContent>
+
+                                            <TabsContent value="installment" className="m-0 space-y-4">
+                                                <InstallmentOptions
+                                                    productType="bundle"
+                                                    productId={bundle.id}
+                                                    productPrice={bundle.price}
+                                                    terms={installmentTerms}
+                                                    activeInstallment={activeInstallment}
+                                                    termsAccepted={termsAccepted}
+                                                    onTermsAcceptedChange={setTermsAccepted}
+                                                    onBeforePay={async () => {
+                                                        if (!activeInstallment && !termsAccepted) {
+                                                            toast.error(
+                                                                t(
+                                                                    'bundling.checkout.errors.termsRequired',
+                                                                    'Anda harus menyetujui syarat dan ketentuan!',
+                                                                ),
+                                                            );
+                                                            return false;
+                                                        }
+                                                        return await ensureAuth();
+                                                    }}
+                                                />
+                                            </TabsContent>
+                                        </Tabs>
+                                    ) : (
+                                        <>
+                                            {/* Collapsible Voucher / Referral */}
+                                            <Collapsible open={promoOpen || promoApplied} onOpenChange={setPromoOpen}>
+                                                <CollapsibleTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="flex min-h-11 w-full items-center justify-between rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] px-4 py-2.5 text-left text-sm font-semibold text-[#12344E] transition-colors hover:border-[#93C5FD]"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <Tag className="h-4 w-4 text-[#1976D3]" />
+                                                            <span>{t('webinar.register.havePromoCode', 'Punya kode voucher atau referral?')}</span>
+                                                            {promoApplied && (
+                                                                <span className="rounded-full bg-[#DCFCE7] px-2 py-0.5 text-[11px] font-semibold text-[#15803D]">
+                                                                    {t('webinar.register.codeAppliedTag', 'Aktif')}
+                                                                </span>
+                                                            )}
+                                                        </span>
+                                                        <ChevronDown
+                                                            className={`h-4 w-4 text-[#5B6B7F] transition-transform ${
+                                                                promoOpen || promoApplied ? 'rotate-180' : ''
+                                                            }`}
+                                                        />
+                                                    </button>
+                                                </CollapsibleTrigger>
+                                                <CollapsibleContent className="pt-3">
+                                                    <div className="space-y-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-4">
+                                                        <div className="space-y-1.5">
+                                                            <Label className="text-xs font-semibold uppercase tracking-wide text-[#5B6B7F]">
                                                                 {t('bundling.checkout.codeType', 'Jenis Kode')}
                                                             </Label>
                                                             <RadioGroup
@@ -1463,26 +1540,25 @@ export default function CheckoutBundle({
                                                                     setPromoError('');
                                                                     setReferralError('');
                                                                 }}
-                                                                className="flex gap-4"
+                                                                className="flex gap-5 pt-1"
                                                             >
                                                                 <div className="flex items-center space-x-2">
                                                                     <RadioGroupItem value="voucher" id="bund-code-voucher" />
-                                                                    <Label htmlFor="bund-code-voucher" className="cursor-pointer text-sm">
+                                                                    <Label htmlFor="bund-code-voucher" className="cursor-pointer text-sm text-[#162230]">
                                                                         {t('bundling.checkout.voucher', 'Voucher')}
                                                                     </Label>
                                                                 </div>
                                                                 <div className="flex items-center space-x-2">
                                                                     <RadioGroupItem value="referral" id="bund-code-referral" />
-                                                                    <Label htmlFor="bund-code-referral" className="cursor-pointer text-sm">
+                                                                    <Label htmlFor="bund-code-referral" className="cursor-pointer text-sm text-[#162230]">
                                                                         {t('bundling.checkout.referral', 'Referral')}
                                                                     </Label>
                                                                 </div>
                                                             </RadioGroup>
                                                         </div>
 
-                                                        {/* Input Kode */}
-                                                        <div className="space-y-2">
-                                                            <Label htmlFor="promo-code" className="text-sm font-medium">
+                                                        <div className="space-y-1.5">
+                                                            <Label htmlFor="promo-code" className="text-xs font-semibold text-[#162230]">
                                                                 {codeType === 'voucher'
                                                                     ? t('bundling.checkout.voucherCode', 'Kode Voucher / Promo')
                                                                     : t('bundling.checkout.referralCode', 'Kode Referral')}
@@ -1503,38 +1579,35 @@ export default function CheckoutBundle({
                                                                     />
                                                                     {(promoLoading || referralLoading) && (
                                                                         <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                                                            <LoaderCircle className="h-4 w-4 animate-spin text-gray-400" />
+                                                                            <LoaderCircle className="h-4 w-4 animate-spin text-[#1976D3]" />
                                                                         </div>
                                                                     )}
                                                                     {!(promoLoading || referralLoading) && promoCode && (
                                                                         <div className="absolute top-1/2 right-3 -translate-y-1/2">
                                                                             {codeType === 'voucher' ? (
                                                                                 discountData?.valid ? (
-                                                                                    <Check className="h-5 w-5 text-green-600" />
+                                                                                    <Check className="h-5 w-5 text-[#15803D]" />
                                                                                 ) : promoError ? (
-                                                                                    <X className="h-5 w-5 text-red-600" />
+                                                                                    <X className="h-5 w-5 text-[#B91C1C]" />
                                                                                 ) : null
-                                                                            ) : (
-                                                                                referralData?.valid ? (
-                                                                                    <Check className="h-5 w-5 text-green-600" />
-                                                                                ) : referralError ? (
-                                                                                    <X className="h-5 w-5 text-red-600" />
-                                                                                ) : null
-                                                                            )}
+                                                                            ) : referralData?.valid ? (
+                                                                                <Check className="h-5 w-5 text-[#15803D]" />
+                                                                            ) : referralError ? (
+                                                                                <X className="h-5 w-5 text-[#B91C1C]" />
+                                                                            ) : null}
                                                                         </div>
                                                                     )}
                                                                 </div>
                                                                 <Button
                                                                     type="button"
                                                                     variant="outline"
-                                                                    size="icon"
                                                                     onClick={async () => {
                                                                         if (!promoCode.trim()) {
                                                                             toast.error(
                                                                                 t('bundling.checkout.errors.enterCodeRequired', {
                                                                                     type: codeType === 'voucher' ? 'promo' : 'referral',
                                                                                     defaultValue: `Masukkan kode ${codeType === 'voucher' ? 'promo' : 'referral'} terlebih dahulu`,
-                                                                                })
+                                                                                }),
                                                                             );
                                                                             return;
                                                                         }
@@ -1542,463 +1615,163 @@ export default function CheckoutBundle({
                                                                         else await validateReferralCode();
                                                                     }}
                                                                     disabled={promoLoading || referralLoading || !promoCode.trim()}
-                                                                    className="flex-shrink-0"
+                                                                    className="h-11 shrink-0 gap-1.5 px-3"
                                                                 >
                                                                     <RefreshCw className="h-4 w-4" />
+                                                                    <span className="text-xs font-semibold">
+                                                                        {t('webinar.register.btnVerifyCode', 'Cek')}
+                                                                    </span>
                                                                 </Button>
                                                             </div>
 
-                                                            {/* Voucher feedback */}
                                                             {codeType === 'voucher' && promoError && (
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, y: -10 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20"
-                                                                >
-                                                                    <X className="h-4 w-4 flex-shrink-0 text-red-600" />
-                                                                    <p className="text-sm text-red-600 dark:text-red-400">{promoError}</p>
-                                                                </motion.div>
+                                                                <p className="text-xs font-medium text-[#B91C1C]">{promoError}</p>
                                                             )}
                                                             {codeType === 'voucher' && discountData?.valid && (
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                                    animate={{ opacity: 1, scale: 1 }}
-                                                                    className="rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 dark:from-green-950/20 dark:to-emerald-950/20"
-                                                                >
-                                                                    <div className="mb-2 flex items-center gap-2">
-                                                                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500">
-                                                                            <Check className="h-4 w-4 text-white" />
-                                                                        </div>
-                                                                        <p className="font-semibold text-green-800 dark:text-green-200">
+                                                                <div className="rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] p-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Check className="h-4 w-4 text-[#15803D]" />
+                                                                        <p className="text-xs font-semibold text-[#15803D]">
                                                                             {t('bundling.checkout.voucherSuccess', {
                                                                                 code: discountData.discount_code.code,
                                                                                 defaultValue: `Promo "${discountData.discount_code.code}" diterapkan!`,
                                                                             })}
                                                                         </p>
                                                                     </div>
-                                                                    <p className="text-sm text-green-700 dark:text-green-300">
-                                                                        <span className="font-mono font-bold">{discountData.discount_code.code}</span> -{' '}
-                                                                        {discountData.discount_code.name}
-                                                                    </p>
-                                                                    <p className="mt-1 text-xs text-green-600 dark:text-green-400">
-                                                                        {t('bundling.detail.register.saveLabel', 'Hemat')}{' '}
-                                                                        {discountData.discount_code.formatted_value}
-                                                                    </p>
-                                                                </motion.div>
+                                                                    <p className="mt-1 text-xs text-[#166534]">{discountData.discount_code.name}</p>
+                                                                </div>
                                                             )}
 
-                                                            {/* Referral feedback */}
                                                             {codeType === 'referral' && referralError && (
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, y: -10 }}
-                                                                    animate={{ opacity: 1, y: 0 }}
-                                                                    className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-900 dark:bg-red-950/20"
-                                                                >
-                                                                    <X className="h-4 w-4 flex-shrink-0 text-red-600" />
-                                                                    <p className="text-sm text-red-600 dark:text-red-400">{referralError}</p>
-                                                                </motion.div>
+                                                                <p className="text-xs font-medium text-[#B91C1C]">{referralError}</p>
                                                             )}
                                                             {codeType === 'referral' && referralData?.valid && (
-                                                                <motion.div
-                                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                                    animate={{ opacity: 1, scale: 1 }}
-                                                                    className="rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-4 dark:from-green-950/20 dark:to-emerald-950/20"
-                                                                >
-                                                                    <div className="mb-2 flex items-center gap-2">
-                                                                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500">
-                                                                            <Check className="h-4 w-4 text-white" />
-                                                                        </div>
-                                                                        <p className="font-semibold text-green-800 dark:text-green-200">
+                                                                <div className="rounded-lg border border-[#BBF7D0] bg-[#F0FDF4] p-3">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Check className="h-4 w-4 text-[#15803D]" />
+                                                                        <p className="text-xs font-semibold text-[#15803D]">
                                                                             {t('bundling.checkout.referralSuccess', 'Kode Referral Valid!')}
                                                                         </p>
                                                                     </div>
-                                                                    <p className="text-sm text-green-700 dark:text-green-300">
+                                                                    <p className="mt-1 text-xs text-[#166534]">
                                                                         {t('bundling.checkout.referralReferredBy', {
                                                                             name: referralData.referrer?.name,
                                                                             defaultValue: `Pembelian Anda dirujuk oleh ${referralData.referrer?.name}. Reward poin akan masuk setelah pembayaran sukses.`,
                                                                         })}
                                                                     </p>
-                                                                </motion.div>
+                                                                </div>
                                                             )}
                                                         </div>
                                                     </div>
+                                                </CollapsibleContent>
+                                            </Collapsible>
 
-                                                    {/* Price Breakdown */}
-                                                    <div className="space-y-3 rounded-lg bg-gray-50 p-4 dark:bg-gray-900/50">
-                                                        <div className="flex items-center justify-between text-sm">
-                                                            <span className="text-gray-600 dark:text-gray-400">
-                                                                {t('bundling.checkout.bundlePrice', 'Harga Paket')}
-                                                            </span>
-                                                            <span className="font-semibold">{rupiahFormatter.format(bundle.price)}</span>
-                                                        </div>
-
-                                                        {discountData?.valid && (
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-                                                                    <Gift className="h-3.5 w-3.5" />
-                                                                    {t('bundling.checkout.promoDiscount', {
-                                                                        code: discountData.discount_code.code,
-                                                                        defaultValue: `Promo (${discountData.discount_code.code})`,
-                                                                    })}
-                                                                </span>
-                                                                <span className="font-semibold text-green-600">
-                                                                    -{rupiahFormatter.format(discountData.discount_amount)}
-                                                                </span>
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex items-center justify-between text-sm">
-                                                            <span className="text-gray-600 dark:text-gray-400">
-                                                                {t('bundling.checkout.transactionFee', 'Biaya Transaksi')}
-                                                            </span>
-                                                            <span className="font-semibold">{rupiahFormatter.format(adminFee)}</span>
-                                                        </div>
-
-                                                        <Separator />
-
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="font-bold">
-                                                                {t('bundling.checkout.totalPayment', 'Total Pembayaran')}
-                                                            </span>
-                                                            <span className="text-2xl font-bold text-orange-600">
-                                                                {rupiahFormatter.format(totalPrice)}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Security Note */}
-                                                    <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/20">
-                                                        <Shield className="h-5 w-5 flex-shrink-0 text-blue-600" />
-                                                        <div className="text-xs text-blue-700 dark:text-blue-300">
-                                                            <p className="mb-1 font-semibold">
-                                                                {t('bundling.checkout.securityTitle', 'Pembayaran Aman & Terpercaya')}
-                                                            </p>
-                                                            <p>{t('bundling.checkout.securityDesc', 'Transaksi Anda dilindungi dengan enkripsi SSL')}</p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Terms Checkbox */}
-                                                    <div className="flex items-start gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/50">
-                                                        <Checkbox
-                                                            id="terms"
-                                                            checked={termsAccepted}
-                                                            onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                                                            className="mt-0.5"
-                                                        />
-                                                        <Label htmlFor="terms" className="cursor-pointer text-sm leading-relaxed">
-                                                            {t('bundling.checkout.agreeTerms', 'Saya menyetujui')}{' '}
-                                                            <a
-                                                                href="/terms-and-conditions"
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="font-medium text-blue-600 hover:underline"
-                                                            >
-                                                                {t('bundling.checkout.termsAndConditions', 'syarat dan ketentuan')}
-                                                            </a>{' '}
-                                                            {t('bundling.checkout.termsApplicable', 'yang berlaku')}
-                                                        </Label>
-                                                    </div>
-
-                                                    {/* Submit Button */}
-                                                    <Button type="submit" size="lg" disabled={!termsAccepted || loading} className="w-full disabled:opacity-50">
-                                                        {loading ? (
-                                                            <>
-                                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                                                                {t('bundling.checkout.processing', 'Memproses...')}
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <CreditCard className="mr-2 h-5 w-5" />
-                                                                {t('bundling.checkout.btnPayNow', 'Lanjutkan Pembayaran')}
-                                                            </>
-                                                        )}
-                                                    </Button>
-                                                </TabsContent>
-
-                                                {/* Tab Cicilan */}
-                                                <TabsContent value="installment" className="space-y-4 m-0">
-                                                    <InstallmentOptions
-                                                        productType="bundle"
-                                                        productId={bundle.id}
-                                                        productPrice={bundle.price}
-                                                        terms={installmentTerms}
-                                                        activeInstallment={activeInstallment}
-                                                        termsAccepted={termsAccepted}
-                                                        onTermsAcceptedChange={setTermsAccepted}
-                                                        onBeforePay={async () => {
-                                                            if (!activeInstallment && !termsAccepted) {
-                                                                toast.error(t('bundling.checkout.errors.termsRequired', 'Anda harus menyetujui syarat dan ketentuan!'));
-                                                                return false;
-                                                            }
-                                                            return await ensureAuth();
-                                                        }}
-                                                    />
-                                                </TabsContent>
-                                            </Tabs>
-                                        ) : (
-                                            <>
-                                                <div className="mb-4 space-y-4">
-                                                    {/* Jenis Kode */}
-                                                    <div className="space-y-2">
-                                                        <Label className="text-sm font-medium flex items-center gap-2">
-                                                            <Tag className="h-4 w-4" />
-                                                            {t('bundling.checkout.codeType', 'Jenis Kode')}
-                                                        </Label>
-                                                        <RadioGroup
-                                                            value={codeType}
-                                                            onValueChange={(val: 'voucher' | 'referral') => {
-                                                                setCodeType(val);
-                                                                setPromoCode('');
-                                                                setDiscountData(null);
-                                                                setReferralData(null);
-                                                                setPromoError('');
-                                                                setReferralError('');
-                                                            }}
-                                                            className="flex gap-4"
-                                                        >
-                                                            <div className="flex items-center space-x-2">
-                                                                <RadioGroupItem value="voucher" id="bund-code-voucher" />
-                                                                <Label htmlFor="bund-code-voucher" className="cursor-pointer text-sm">
-                                                                    {t('bundling.checkout.voucher', 'Voucher')}
-                                                                </Label>
-                                                            </div>
-                                                            <div className="flex items-center space-x-2">
-                                                                <RadioGroupItem value="referral" id="bund-code-referral" />
-                                                                <Label htmlFor="bund-code-referral" className="cursor-pointer text-sm">
-                                                                    {t('bundling.checkout.referral', 'Referral')}
-                                                                </Label>
-                                                            </div>
-                                                        </RadioGroup>
-                                                    </div>
-
-                                                    {/* Input Kode */}
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor="promo-code" className="text-sm font-medium">
-                                                            {codeType === 'voucher'
-                                                                ? t('bundling.checkout.voucherCode', 'Kode Voucher / Promo')
-                                                                : t('bundling.checkout.referralCode', 'Kode Referral')}
-                                                        </Label>
-                                                        <div className="flex gap-2">
-                                                            <div className="relative flex-1">
-                                                                <Input
-                                                                    id="promo-code"
-                                                                    type="text"
-                                                                    placeholder={
-                                                                        codeType === 'voucher'
-                                                                            ? t('bundling.checkout.enterVoucherCode', 'Masukkan kode promo')
-                                                                            : t('bundling.checkout.enterReferralCode', 'Masukkan kode referral')
-                                                                    }
-                                                                    value={promoCode}
-                                                                    onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
-                                                                    className="pr-10"
-                                                                />
-                                                                {(promoLoading || referralLoading) && (
-                                                                    <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                                                        <LoaderCircle className="h-4 w-4 animate-spin text-gray-400" />
-                                                                    </div>
-                                                                )}
-                                                                {!(promoLoading || referralLoading) && promoCode && (
-                                                                    <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                                                                        {codeType === 'voucher' ? (
-                                                                            discountData?.valid ? (
-                                                                                <Check className="h-5 w-5 text-green-600" />
-                                                                            ) : promoError ? (
-                                                                                <X className="h-5 w-5 text-red-600" />
-                                                                            ) : null
-                                                                        ) : (
-                                                                            referralData?.valid ? (
-                                                                                <Check className="h-5 w-5 text-green-600" />
-                                                                            ) : referralError ? (
-                                                                                <X className="h-5 w-5 text-red-600" />
-                                                                            ) : null
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="icon"
-                                                                onClick={async () => {
-                                                                    if (!promoCode.trim()) {
-                                                                        toast.error(
-                                                                            t('bundling.checkout.errors.enterCodeRequired', {
-                                                                                type: codeType === 'voucher' ? 'promo' : 'referral',
-                                                                                defaultValue: `Masukkan kode ${codeType === 'voucher' ? 'promo' : 'referral'} terlebih dahulu`,
-                                                                            })
-                                                                        );
-                                                                        return;
-                                                                    }
-                                                                    if (codeType === 'voucher') await validatePromoCode();
-                                                                    else await validateReferralCode();
-                                                                }}
-                                                                disabled={promoLoading || referralLoading || !promoCode.trim()}
-                                                                className="flex-shrink-0"
-                                                            >
-                                                                <RefreshCw className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-
-                                                        {/* Voucher feedback */}
-                                                        {codeType === 'voucher' && promoError && <p className="text-sm text-red-600">{promoError}</p>}
-                                                        {codeType === 'voucher' && discountData?.valid && (
-                                                            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Check className="h-4 w-4 text-green-600" />
-                                                                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                                                        {t('bundling.checkout.voucherSuccess', {
-                                                                            code: discountData.discount_code.code,
-                                                                            defaultValue: `Promo "${discountData.discount_code.code}" diterapkan!`,
-                                                                        })}
-                                                                    </p>
-                                                                </div>
-                                                                <p className="mt-1 text-xs text-green-600 dark:text-green-300">
-                                                                    {discountData.discount_code.name}
-                                                                </p>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Referral feedback */}
-                                                        {codeType === 'referral' && referralError && <p className="text-sm text-red-600">{referralError}</p>}
-                                                        {codeType === 'referral' && referralData?.valid && (
-                                                            <div className="rounded-lg border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-900/20">
-                                                                <div className="flex items-center gap-2">
-                                                                    <Check className="h-4 w-4 text-green-600" />
-                                                                    <p className="text-sm font-medium text-green-800 dark:text-green-200">
-                                                                        {t('bundling.checkout.referralSuccess', 'Kode Referral Valid!')}
-                                                                    </p>
-                                                                </div>
-                                                                <p className="mt-1 text-xs text-green-600 dark:text-green-300">
-                                                                    {t('bundling.checkout.referralReferredBy', {
-                                                                        name: referralData.referrer?.name,
-                                                                        defaultValue: `Pembelian Anda dirujuk oleh ${referralData.referrer?.name}. Reward poin akan masuk setelah pembayaran sukses.`,
-                                                                    })}
-                                                                </p>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                {/* Price Breakdown */}
-                                                <div className="mb-6 space-y-3 rounded-lg border bg-gray-50 p-4 dark:bg-gray-900/50">
+                                            {/* Price Breakdown */}
+                                            <div className="space-y-2.5 rounded-xl border border-[#DCE3EC] bg-[#F2F6FA] p-4">
+                                                {bundle.strikethrough_price > 0 && (
                                                     <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-gray-600 dark:text-gray-400">
-                                                            {t('bundling.checkout.normalPrice', 'Harga Normal')}
-                                                        </span>
-                                                        <span className="font-medium text-gray-500 line-through">
+                                                        <span className="text-[#475569]">{t('bundling.checkout.normalPrice', 'Harga Normal')}</span>
+                                                        <span className="text-[#5B6B7F] line-through tabular-nums">
                                                             {rupiahFormatter.format(bundle.strikethrough_price)}
                                                         </span>
                                                     </div>
+                                                )}
 
-                                                    {bundleDiscount > 0 && (
-                                                        <>
-                                                            <div className="flex items-center justify-between text-sm">
-                                                                <span className="text-gray-600 dark:text-gray-400">
-                                                                    {t('bundling.checkout.bundleDiscount', 'Diskon Bundle')}
-                                                                </span>
-                                                                <span className="font-semibold text-red-600">-{rupiahFormatter.format(bundleDiscount)}</span>
-                                                            </div>
-                                                            <Separator />
-                                                        </>
-                                                    )}
-
-                                                    {discountData?.valid && (
-                                                        <div className="flex items-center justify-between text-sm">
-                                                            <span className="text-gray-600 dark:text-gray-400">
-                                                                {t('bundling.checkout.promoDiscount', {
-                                                                    code: discountData.discount_code.code,
-                                                                    defaultValue: `Diskon Promo (${discountData.discount_code.code})`,
-                                                                })}
-                                                            </span>
-                                                            <span className="font-semibold text-green-600">
-                                                                -{rupiahFormatter.format(discountData.discount_amount)}
-                                                            </span>
-                                                        </div>
-                                                    )}
-
+                                                {bundleDiscount > 0 && (
                                                     <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-gray-600 dark:text-gray-400">
-                                                            {t('bundling.checkout.bundlePrice', 'Harga Paket')}
+                                                        <span className="text-[#475569]">{t('bundling.checkout.bundleDiscount', 'Diskon Bundle')}</span>
+                                                        <span className="font-semibold text-[#15803D] tabular-nums">
+                                                            -{rupiahFormatter.format(bundleDiscount)}
                                                         </span>
-                                                        <span className="font-semibold">{rupiahFormatter.format(bundle.price)}</span>
-                                                    </div>
-
-                                                    <div className="flex items-center justify-between text-sm">
-                                                        <span className="text-gray-600 dark:text-gray-400">
-                                                            {t('bundling.checkout.transactionFee', 'Biaya Transaksi')}
-                                                        </span>
-                                                        <span className="font-semibold">{rupiahFormatter.format(adminFee)}</span>
-                                                    </div>
-
-                                                    <Separator />
-
-                                                    <div className="flex items-center justify-between">
-                                                        <span className="font-bold">
-                                                            {t('bundling.checkout.totalPayment', 'Total Pembayaran')}
-                                                        </span>
-                                                        <div className="text-right">
-                                                            {bundleDiscount > 0 && (
-                                                                <div className="text-xs text-gray-500 line-through">
-                                                                    {rupiahFormatter.format(bundle.strikethrough_price + adminFee)}
-                                                                </div>
-                                                            )}
-                                                            <span className="text-2xl font-bold text-blue-600">{rupiahFormatter.format(totalPrice)}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                {/* Referral Info */}
-                                                {referralInfo.hasActive && (
-                                                    <div className="mb-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 dark:from-blue-950/20 dark:to-indigo-950/20">
-                                                        <p className="text-sm font-medium text-blue-800 dark:text-blue-400">
-                                                            {t('bundling.checkout.referralActiveNotice', {
-                                                                code: referralInfo.code,
-                                                                defaultValue: `🎁 Menggunakan kode referral: ${referralInfo.code}`,
-                                                            })}
-                                                        </p>
-                                                        <p className="mt-1 text-xs text-blue-600 dark:text-blue-500">
-                                                            {t('bundling.checkout.referralHelpFriend', 'Anda membantu teman Anda mendapatkan komisi!')}
-                                                        </p>
                                                     </div>
                                                 )}
 
-                                                {/* Security Note */}
-                                                <div className="mb-4 flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/20">
-                                                    <Shield className="h-5 w-5 flex-shrink-0 text-blue-600" />
-                                                    <div className="text-xs text-blue-700 dark:text-blue-300">
-                                                        <p className="mb-1 font-semibold">
-                                                            {t('bundling.checkout.securityTitle', 'Pembayaran Aman & Terpercaya')}
-                                                        </p>
-                                                        <p>{t('bundling.checkout.securityDesc', 'Transaksi Anda dilindungi dengan enkripsi SSL')}</p>
+                                                {discountData?.valid && (
+                                                    <div className="flex items-center justify-between text-sm">
+                                                        <span className="text-[#475569]">
+                                                            {t('bundling.checkout.promoDiscount', {
+                                                                code: discountData.discount_code.code,
+                                                                defaultValue: `Diskon Promo (${discountData.discount_code.code})`,
+                                                            })}
+                                                        </span>
+                                                        <span className="font-semibold text-[#15803D] tabular-nums">
+                                                            -{rupiahFormatter.format(discountData.discount_amount)}
+                                                        </span>
                                                     </div>
+                                                )}
+
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-[#475569]">{t('bundling.checkout.bundlePrice', 'Harga Paket')}</span>
+                                                    <span className="font-semibold text-[#162230] tabular-nums">
+                                                        {rupiahFormatter.format(bundle.price)}
+                                                    </span>
                                                 </div>
 
-                                                {/* Terms Checkbox */}
-                                                <div className="mb-4 flex items-start gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-900/50">
-                                                    <Checkbox
-                                                        id="terms"
-                                                        checked={termsAccepted}
-                                                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
-                                                        className="mt-0.5"
-                                                    />
-                                                    <Label htmlFor="terms" className="cursor-pointer text-sm leading-relaxed">
-                                                        {t('bundling.checkout.agreeTerms', 'Saya menyetujui')}{' '}
-                                                        <a
-                                                            href="/terms-and-conditions"
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="font-medium text-blue-600 hover:underline"
-                                                        >
-                                                            {t('bundling.checkout.termsAndConditions', 'syarat dan ketentuan')}
-                                                        </a>{' '}
-                                                        {t('bundling.checkout.termsApplicable', 'yang berlaku')}
-                                                    </Label>
+                                                <div className="flex items-center justify-between text-sm">
+                                                    <span className="text-[#475569]">{t('bundling.checkout.transactionFee', 'Biaya Transaksi')}</span>
+                                                    <span className="font-medium text-[#162230] tabular-nums">
+                                                        {rupiahFormatter.format(adminFee)}
+                                                    </span>
                                                 </div>
 
-                                                {/* Submit Button */}
-                                                <Button type="submit" size="lg" disabled={!termsAccepted || loading} className="w-full disabled:opacity-50">
+                                                <Separator className="bg-[#DCE3EC]" />
+
+                                                <div className="flex items-center justify-between pt-1">
+                                                    <span className="font-semibold text-[#12344E]">
+                                                        {t('bundling.checkout.totalPayment', 'Total Pembayaran')}
+                                                    </span>
+                                                    <span className="font-literata text-2xl font-bold text-[#12344E] tabular-nums">
+                                                        {rupiahFormatter.format(totalPrice)}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            {referralInfo.hasActive && (
+                                                <div className="rounded-xl border border-[#BFDBFE] bg-[#EAF3FC] p-3.5 text-xs text-[#12344E]">
+                                                    <p className="font-semibold">
+                                                        {t('bundling.checkout.referralActiveNotice', {
+                                                            code: referralInfo.code,
+                                                            defaultValue: `Menggunakan kode referral: ${referralInfo.code}`,
+                                                        })}
+                                                    </p>
+                                                    <p className="mt-0.5 text-[#475569]">
+                                                        {t('bundling.checkout.referralHelpFriend', 'Anda membantu teman Anda mendapatkan komisi.')}
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {/* Terms Checkbox */}
+                                            <div className="flex items-start gap-3 rounded-xl border border-[#DCE3EC] bg-[#FAF8F4] p-3.5">
+                                                <Checkbox
+                                                    id="terms"
+                                                    checked={termsAccepted}
+                                                    onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                                                    className="mt-0.5"
+                                                />
+                                                <Label htmlFor="terms" className="cursor-pointer text-xs leading-relaxed text-[#475569] sm:text-sm">
+                                                    {t('bundling.checkout.agreeTerms', 'Saya menyetujui')}{' '}
+                                                    <a
+                                                        href="/terms-and-conditions"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="font-semibold text-[#1976D3] hover:underline"
+                                                    >
+                                                        {t('bundling.checkout.termsAndConditions', 'syarat dan ketentuan')}
+                                                    </a>{' '}
+                                                    {t('bundling.checkout.termsApplicable', 'yang berlaku')}
+                                                </Label>
+                                            </div>
+
+                                            <div className="space-y-2">
+                                                <Button
+                                                    type="submit"
+                                                    size="lg"
+                                                    disabled={!termsAccepted || loading}
+                                                    className="h-12 w-full text-base font-semibold"
+                                                >
                                                     {loading ? (
                                                         <>
-                                                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                                                            <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
                                                             {t('bundling.checkout.processing', 'Memproses...')}
                                                         </>
                                                     ) : (
@@ -2008,16 +1781,30 @@ export default function CheckoutBundle({
                                                         </>
                                                     )}
                                                 </Button>
-                                            </>
-                                        )}
-                                    </form>
-                                </Card>
-                            )}
-                        </div>
-                    </motion.div>
+
+                                                {!termsAccepted && !loading && (
+                                                    <p className="text-center text-xs text-[#5B6B7F]">
+                                                        {t(
+                                                            'webinar.register.disabledTermsHint',
+                                                            'Centang persetujuan syarat dan ketentuan di atas untuk mengaktifkan tombol bayar.',
+                                                        )}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center justify-center gap-1.5 text-xs text-[#5B6B7F]">
+                                                <Shield className="h-3.5 w-3.5 text-[#15803D]" />
+                                                <span>{t('bundling.checkout.securityDesc', 'Transaksi Anda dilindungi dengan enkripsi SSL')}</span>
+                                            </div>
+                                        </>
+                                    )}
+                                </form>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </section>
+            </main>
             <Toaster position="top-center" richColors />
-        </UserLayout>
+        </div>
     );
 }
